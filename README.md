@@ -62,7 +62,7 @@ DSH Web GUI 的会话头上边栏把所有控件挤在一行里，面板模块�
 ### 方式一：用 `dsh plugin` 命令（推荐）
 
 ```bash
-dsh plugin --profile web add <本目录绝对路径>
+dsh plugin --profile web add "github:TowardsDawn/dsh-layout-tweaks"
 ```
 
 该命令会把本包写进 profile 的 `dsh.profile.bundles`，并让 bundle 层读取本包的 `cordis.patch.yml`。
