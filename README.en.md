@@ -2,11 +2,11 @@
 
 # dsh-layout-tweaks
 
-**Layout tweaks for the DSH Web GUI — a two-row session header and entry modules folded into a collapsible block**
+**Layout tweaks for the DSH Web GUI — a two-row session header and a one-click collapsible panel list**
 
-Render-layer only · touches no other plugin · no build step · new plugin entries land in the block automatically
+Render-layer only · touches no other plugin · never touches the sidebar footer · no build step
 
-[![Version](https://img.shields.io/badge/version-0.2.4-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -19,40 +19,49 @@ Render-layer only · touches no other plugin · no build step · new plugin entr
 
 ## What it does
 
-Two spots in the DSH Web GUI waste space: the session header packs every control into a single row,
-and the left sidebar spreads its navigation across both ends of the column — panel modules (Plugins,
-Task board, Skill center, SSH) at the top, feature entries at the
-bottom — squeezing the workspace/session list between them.
+Two spots in the DSH Web GUI are awkward: the session header crams the title, the working mode and a
+dozen action buttons into a single row; and the panel modules at the top of the left sidebar (Plugins,
+Task board, Skill center, SSH) always take up space even when you are not using them.
 
 This plugin fixes both, and:
 
 - **claims no slot** and **changes no other plugin's code**;
+- **never touches the sidebar footer** — the position and order of *Context insight / Session manager /
+  Check for updates / Remote access / Today's cost / Settings* belong to the host and to other
+  plugins; this one writes no attribute and ships no rule for them (a hard boundary since v0.3.0 —
+  see [the appendix](#appendix-an-abandoned-attempt));
 - works purely through injected CSS plus one self-owned collapse header — the React tree never notices;
 - ships **prebuilt, hand-written `lib/`** (no tsdown / rolldown / tsc required);
 - **fails silently** when an anchor is missing — it can never half-break the host UI.
 
+## Features
+
 | # | Feature | Default | Notes |
 |---|---------|:-------:|-------|
-| ① | **Two-row session header** | on | Row 1 = session title + working mode; row 2 = undo / restore / snapshot / archive / tags / move / delete; the tab strip stays where it is |
-| ② | **Entry modules folded into the block** | on | 「Context insight / Session manager」-style entries leave the sidebar footer and sit right under the panel list, becoming part of the fold |
-| ③ | **The fold** | expanded | A collapse header at the top of the sidebar hides the panel list **and** those entries in one click, handing the space back to the workspace list |
+| ① | **Two-row session header** | on | Row 1 = session title + working mode; row 2 = undo / restore / snapshot / archive / tags / move / copy link; the tab strip stays where it is |
+| ② | **Collapsible panel list** | expanded | A collapse header at the top of the sidebar hides Plugins / Task board / Skill center / SSH in one click, handing the space back to the workspace list |
 
-Both switches (① ②) live behind the ⚙ on the collapse header and apply live; ③ is a click on the header itself.
+② is a click on the header itself: instant, and remembered. While the sidebar is collapsed to the 56px
+rail, the header hides itself.
 
 ## Preview
 
-| Before | After |
+| Before (plugin off) | After (plugin on) |
 |:------:|:-----:|
 | ![before](assets/before.png) | ![after](assets/after.png) |
 
-| Collapsed | Settings |
-|:---------:|:--------:|
-| ![collapsed](assets/collapsed.png) | ![settings](assets/settings.png) |
+- **Header**: `dsh bug 检查` + `标准模式` get row 1 to themselves; every other control moves down a row
+  instead of being squeezed sideways.
+- **Sidebar**: a collapse header (`▾ Panels & plugins 4`) appears above the panel list.
 
-In the *After* shot the sidebar reads: `▾ Panels & plugins 7` → Plugins / Task board / Skill center /
-SSH → **Context insight / Session manager / Example new module** → workspace list → `⟳ Check for
-updates` / `⇄ Remote access` / Today's cost / Settings. The three bottom controls stay exactly where
-they were, in the same relative order.
+**The footer area is identical in both screenshots** — `⟳ Check for updates / ⇄ Remote access /
+Context insight / Session manager / Today's cost / Settings` keep their position, order and horizontal
+arrangement. That is a deliberate boundary: the plugin ships no rule for the footer area and writes no
+attribute on its nodes (the fixture reports the number of footer nodes written to — it must be 0).
+
+### ② Collapsed
+
+![collapsed](assets/collapsed.png)
 
 > Screenshots come from the offline fixture `test/fixture.html`, which reproduces the session header
 > and left sidebar using the **real DOM shape observed on a live client** — so the layout can be
@@ -64,55 +73,50 @@ they were, in the same relative order.
 dsh plugin --profile web add "github:TowardsDawn/dsh-layout-tweaks"
 ```
 
-Or manually add the package to `<DSH_HOME>/profiles/web/package.json` (a `file:` dependency plus one
-entry in `dsh.profile.bundles`), then restart `dsh web`.
+This writes the package into the profile's `dsh.profile.bundles` and lets the bundle layer read its
+`cordis.patch.yml`. Or do it manually: add a `file:` dependency plus one entry in
+`dsh.profile.bundles` inside `<DSH_HOME>/profiles/web/package.json`, then restart `dsh web`.
+
+This is a **client-only** plugin: the host half (`lib/index.js`) is just a mount point in the assembly
+tree — it registers no service and reads no session.
+
+> The client half (`lib/client.js`) is read into memory **at startup** by the host (served with
+> `immutable` and a one-year cache), so **editing `lib/client.js` needs a `dsh web` restart** to take
+> effect. The day-to-day collapse toggle is unaffected and applies live.
 
 To disable without uninstalling, set `disabled: true` on the inserted row in this package's
 `cordis.patch.yml`.
 
 ## Configuration
 
-Everything is live — no restart:
+### The collapse toggle (②)
 
-- **⚙ Layout settings** on the collapse header toggles ① / ②, with a **Reset to defaults** action.
-- Clicking the collapse header toggles ③. The number on it counts everything inside the fold
-  (panel rows + folded entry modules).
-- State is persisted in `localStorage` under `dsh-layout-tweaks:v1`:
+Click the collapse header to fold/unfold the panel list. State lives in `localStorage` under
+`dsh-layout-tweaks:v1`:
 
-  ```json
-  { "headerTwoRows": true, "foldEntries": true, "collapsed": false, "bottomKeep": [] }
-  ```
-
-  `bottomKeep` is an array of extra CSS selectors for controls you want **pinned to the bottom**
-  (advanced; see the next section). Clear the key — or hit *Reset to defaults* — to start over.
-
-## Inclusion rules: what folds, what stays
-
-The requirement behind ② is that **future modules should fold in automatically**, while
-「Check for updates / Remote access / Today's cost」 must not move. So ② is a runtime classification,
-not a hard-coded allow-list:
-
-```
-each direct child of footerActions
-        │
-        ├─ contains ≥2 clickable controls (a card: main button + expand caret) ─→ stays at bottom
-        ├─ matches any BOTTOM_KEEP_SELECTORS (self or descendant) ─────────────→ stays at bottom
-        ├─ matches the user's bottomKeep selectors ────────────────────────────→ stays at bottom
-        └─ everything else (including entries registered by future plugins) ───→ folds into the block
+```json
+{ "headerTwoRows": true, "collapsed": false }
 ```
 
-Built-in `BOTTOM_KEEP_SELECTORS` match on **class suffixes and accessible names**, never on the
-hash prefixes that change between builds:
+### Turning the two-row header off (①)
 
-| Target | How it is recognised |
-|--------|----------------------|
-| Usage card | `[class*="footCard"]` / `footMain` / `footToggle`, `[aria-label*="Usage"]`, or the "≥2 controls" rule |
-| Check for updates | `[aria-label*="Check for update(s)"]`, `[title*="Check for update"]` (and the zh equivalents) |
-| Remote access | `[aria-label*="Remote access"]`, `[title*="Remote access"]` (and the zh equivalents) |
-| Panels registered into `sidebar.panellist` | live inside the panel list `nav`, so they fold with it |
+Since v0.3.0 the collapse header carries no settings entry (the old ⚙ and its popover are gone) and ①
+defaults to on. To disable it, run this in the browser console:
 
-Detection inspects **the entry and its descendants**: some plugins wrap their button in a container
-(`entryRow > trigger`), so the accessible name sits on an inner element.
+```js
+const s = JSON.parse(localStorage.getItem('dsh-layout-tweaks:v1') || '{}')
+s.headerTwoRows = false
+localStorage.setItem('dsh-layout-tweaks:v1', JSON.stringify(s))
+location.reload()
+```
+
+Reset everything (two rows on, panel list expanded):
+
+```js
+localStorage.removeItem('dsh-layout-tweaks:v1'); location.reload()
+```
+
+> The old `foldEntries` / `bottomKeep` fields are no longer read; leaving them in place is harmless.
 
 ## How it works
 
@@ -130,9 +134,7 @@ DSH's slot system makes "rearranging someone else's UI" impossible by design:
    slot name.
 
 So this plugin only rearranges at the render layer: no structural changes, no moving React-managed
-nodes, no slot claims. Its only writes are the collapse header it owns and two `data-dsh-lt-*`
-classification attributes on footer entries (React does not manage those; the observer re-applies them
-after a remount).
+nodes, no slot claims. Its only DOM write is a single collapse header it owns.
 
 ### ① Two rows: a zero-DOM line break
 
@@ -148,144 +150,129 @@ inserts a line break **without touching the DOM** — the `::after` pseudo-eleme
 … [data-slot="conversation.session.header.actions"] > *:nth-child(n+2){ order:10 } /* the rest */
 ```
 
-### ② The fold: attribute-driven, no layer guessing
+Being a flex item of the host element itself, the pseudo-element gives a line break point with no
+inserted node — React reconciliation never notices.
 
-The sidebar root is a flex column. What actually feeds entries into that layout are three runtime
-attributes written by JS:
-
-| Attribute | Written on | Purpose |
-|-----------|-----------|---------|
-| `data-dsh-lt-box` | every element on the chain "footer area → … → entry container" | makes the whole chain `display:contents`, so entries become **layout** flex items of the root |
-| `data-dsh-lt-fold` / `data-dsh-lt-keep` | the real entry elements | decides fold vs. bottom-resident |
-| `data-dsh-lt-settings` | the parent container of the settings anchor | keeps Settings at the very bottom |
-
-Ordering then needs nothing but attribute selectors (`:where()` keeps the baseline's specificity at
-zero so it can never beat the classified rules):
-
-```css
-[data-dsh-lt-box]{ display:contents }
-… > div > *{ order:40 }                              /* baseline: stay at the bottom */
-… :where([data-dsh-lt-box] > *){ order:40 }           /* same for elements inside the transparent chain */
-… > div > *:nth-child(-n+2){ order:0 }                /* brand row + New Session */
-… > div > .dsh-lt-head{ order:9 }                     /* collapse header */
-… > div > nav{ order:10 }                             /* panel list */
-[data-dsh-lt-fold]{ order:15 }                        /* entry modules → the fold */
-… > div > div:has(> [data-slot="sidebar.workspaces"]){ order:30 }  /* workspace list */
-[data-dsh-lt-keep]{ order:40 }                        /* bottom-resident controls */
-[data-dsh-lt-settings]{ order:50 }                    /* settings */
-```
-
-`footerActions` is located through the parent of the slot anchor `[data-slot="sidebar.footer.action"]`;
-the entry container is that anchor itself (the transparent host the renderer writes), falling back to
-"drill through single-child wrappers" when the anchor is missing.
-
-The attributes are maintained by JS on every DOM change (`MutationObserver` +
-`requestAnimationFrame` throttling); the classification rules live in
-[Inclusion rules](#inclusion-rules-what-folds-what-stays).
-
-> **Five real traps we hit**
->
-> 1. **`order` applies to the *layout* flex item, while selectors follow the *DOM* hierarchy.**
->    `display:contents` only makes a container transparent for layout; in the DOM it is still the parent
->    of those entries. Written as a direct child, the selector matched nothing and the entries kept
->    `order: 0`, piling up at the very top.
-> 2. **The baseline rule's specificity can beat the classification rules.** A longer baseline selector
->    flattened every classified entry back to `order:40`. Wrapping the baseline in `:where()` drops its
->    specificity to zero.
-> 3. **Never guess the layering.** An earlier version hard-coded "footer area → `footerActions` →
->    entries", but the real client has three layers: below `footerActions` sits another *slot anchor
->    host* (`[data-slot="sidebar.footer.action"]`, a class-less transparent div), and the footer area
->    holds a third container besides `footerActions` / `settingsArea` (the usage card). With the
->    hard-coded layers the classifier only saw that host, judged the whole layer a "card" and left it at
->    the bottom — the plugin looked installed but inert. Now the layering is resolved on the spot and
->    the CSS only reads attributes.
-> 4. **Somebody else may already be ordering the same entries.** In a live client another plugin
->    (marking the sidebar with `data-dsh-frame` / `data-dsh-part`) ships
->    `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`
->    with `(0,6,0)` specificity — higher than this plugin's `(0,3,1)` — which flattened
->    `[data-dsh-lt-fold]{ order:15 }` and pushed the entries to the very top of the sidebar. Every
->    `order` declaration here now carries `!important`: since the classification is ours alone to
->    decide, its ordering must not be overridable by a same-property rule.
-> 5. **A flex value from a row container becomes "grab height" in a column container.** Those two
->    entries used to sit in `footerActions` (`display:flex`, a row) where `flex:1` filled the width.
->    After `display:contents` they land in the sidebar root (`flex-direction:column`), and the very
->    same `flex:1` stretches them vertically — measured: the entry grew to 125px (normally 36px) and
->    the workspace list (`flex:1`) was squeezed to 89px against 234px of content, collapsing to zero
->    on a real client ("the workspace list disappeared"). Hence classified entries always get
->    `flex:0 0 auto !important`.
->
->    The same reason explains **why "Check for updates / Remote access" cannot return to the same row
->    as Settings**: Settings lives inside its own container (`settingsArea`), while those entries are
->    independent flex items of the root column, so each takes its own row. The plugin orders them
->    after the usage card and before Settings — right next to their native position.
-
-### ③ The collapse header
+### ② The collapse header
 
 The single injected DOM node (`.dsh-lt-head`), created and cleaned up by the plugin: an `insertBefore`
 anchor on the sidebar root's `nav` (falling back to the workspaces container), kept in place by a
 throttled `MutationObserver`, with text writes guarded against self-triggering. No React-managed node
-is ever moved. It hides itself while the sidebar is collapsed to the 56px rail.
+is ever moved. Folding is pure CSS:
+`html[data-dsh-lt-collapsed] [data-slot="sidebar"] > div > nav{ display:none }`.
 
 ### Anchors used
 
 `data-slot="conversation.session.header"` (+ `.actions` / `.utilities` / `.corner`),
-`data-slot="sidebar"`, `data-slot="sidebar.workspaces"`, `data-slot="sidebar.settings"`, the
-`sidebar.footer.action` anchor (its parent *and* itself), the sidebar root's direct `nav`, and
-accessible names / class suffixes of the entries themselves. **No CSS-Module hashes** (such as
-`wSkVaW_` / `hHd-Xa_`), which change between releases.
+`data-slot="sidebar"`, `data-slot="sidebar.workspaces"`, and the sidebar root's direct `nav`.
+**No CSS-Module hashes** (such as `wSkVaW_` / `hHd-Xa_`), which change between releases.
+
+## Appendix: an abandoned attempt
+
+Between v0.1.0 and v0.2.4 this plugin also tried to move the sidebar's bottom entries
+(「Context insight / Session manager」 and the like) up under the panel list and into the fold.
+**v0.3.0 removed that machinery entirely**, because the cost far outweighed the benefit (one screen of
+space). The lessons are kept here so nobody repeats them:
+
+1. **Bottom entries and the panel list are registered in very different ways** — different slots,
+   different containers, different layout constraints. "Fold them in" can only be faked at the render
+   layer by flattening the whole container chain with `display:contents`, and that is fragile by
+   construction.
+2. **`order` applies to the *layout* flex item, while selectors follow the *DOM* hierarchy.**
+   `display:contents` only makes a container transparent for layout; in the DOM it is still the parent
+   of those entries. Written as a direct child, the selector matched nothing and the entries kept
+   `order: 0`, piling up at the very top.
+3. **Flattening a container changes the container's own flex direction.** This was the expensive one:
+   bottom entries lived in a row container where `flex:1` filled the width; moved into the sidebar root
+   (a column), the very same `flex:1` became "grab height" — measured: an entry stretched to 125px
+   (normally 36px) and the workspace list was squeezed to zero height. Users reported it as *"the
+   workspace list disappeared"*.
+4. **Someone else may already be ordering the same entries.** In a live client another plugin (marking
+   the sidebar with `data-dsh-frame` / `data-dsh-part`) ships
+   `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`
+   with `(0,6,0)` specificity — higher than this plugin's `(0,3,1)` — flattening the classification
+   result. The only way out was `!important` on everything, which just creates the same problem for
+   the next plugin.
+5. **The baseline rule's specificity can beat the classification rules**, and only `:where()` (zero
+   specificity) makes the baseline lose reliably.
+
+Conclusion: **the sidebar footer belongs to the host and to other plugins — this plugin does not write
+a single byte into it**, so the visible layout is pixel-identical to "this plugin never touched the
+footer", and whatever a new plugin registers is what you see. Since v0.3.0 `npm test` guards that
+boundary with reverse assertions: if `data-dsh-lt-fold` / `data-dsh-lt-keep` / `data-dsh-lt-box` /
+`data-dsh-lt-settings` / `BOTTOM_KEEP_SELECTORS` / `sidebar.footer.action` / `footerActions` ever
+reappear in the source, the test fails.
 
 ## Compatibility
 
 - Host: DSH Web client (DOM shape verified against the 0.2.0-rc series).
 - Browser: anything with `:has()` (Chrome / Edge 105+, Firefox 121+, Safari 15.4+).
-- Degradation: without `:has()` the `@supports` guard disables the rearrangement rules; the plugin
-  stays inert instead of partially applying.
+- Degradation: without `:has()` the `@supports` guard disables the two-row rules and the plugin stays
+  inert; the collapse feature keeps working (it does not need `:has()`).
+- Node (install time only): ≥ 22.19.
 
 ## Known limitations
 
 - Tied to the host DOM shape; a major DSH restructure makes the rules miss (the plugin goes inert
   rather than erroring — update the selectors).
-- Assumes the sidebar root's first two children are the brand row and New Session.
-- `display:contents` cancels `footerActions`' own flex layout; every current footer entry is a
-  full-width control or a self-contained card, so the result is identical — a future horizontal entry
-  would need its own rule.
-- Classification relies on accessible names / class suffixes; a plugin that renames its aria-labels or
-  ships meaningless hashes needs a new entry in `BOTTOM_KEEP_SELECTORS` (or in `bottomKeep`).
-- `order` cannot move an entry *inside* another container: ② makes footer entries follow the panel list
-  in layout order, but in the DOM they still belong to the footer area.
+- The collapse header assumes the sidebar root's first `nav` is the panel list (falling back to the
+  workspaces container). With an empty panel list it degrades to sitting above the workspace area —
+  still clickable, just with nothing to fold.
+- The two-row layout assumes the first item of `actions` is the working mode (it already carries
+  `order:-10` and is always first).
+- Row 2 is an ordinary flex row (`flex-wrap`): a narrow window or many header buttons will spill onto
+  further rows — deliberate, so nothing gets clipped.
+- The collapse header is a self-owned node, so it may sit visually next to the host's own panel-list
+  heading (if any) — expected.
 
 ## FAQ
 
 <details>
-<summary><b>Will a newly installed plugin fold in automatically?</b></summary>
+<summary><b>Does it affect other plugins?</b></summary>
 
-Yes. Panels registered into `sidebar.panellist` already live inside the panel list; entries registered
-into `sidebar.footer.action` are **treated as fold members by default** — no change to this plugin
-required. Only entries recognised as bottom-resident controls stay at the bottom, and you can steer
-that with `bottomKeep` (or by editing `BOTTOM_KEEP_SELECTORS`).
+No. It calls none of their APIs, changes none of their registrations, moves none of their rendered
+nodes, and **writes no attribute on any node in the sidebar footer**. Its only DOM write is a single
+collapse header it owns, removed on unload.
 </details>
 
 <details>
 <summary><b>Why not a proper slot plugin?</b></summary>
 
-See [How it works](#how-it-works) — exclusive `single` slots, cascade-disposed child slots, and
+See [How it works](#why-not-slots) — exclusive `single` slots, cascade-disposed child slots, and
 host-owned `list` positions make "rearranging someone else's UI" impossible at the slot layer.
 Render-layer rearrangement is the only approach that does not drag other plugins into it.
 </details>
 
 <details>
-<summary><b>Does it affect other plugins?</b></summary>
+<summary><b>Why not fold the bottom entries (Context insight / Session manager) in any more?</b></summary>
 
-No. It calls none of their APIs, changes none of their registrations, and moves none of their rendered
-nodes. Its only writes are a collapse header it owns plus two `data-dsh-lt-*` classification
-attributes; both are cleaned up on unload.
+See [the appendix](#appendix-an-abandoned-attempt). In one line: those entries are registered quite
+differently from the panel list, so moving them means flattening containers, flipping a container's
+flex direction and fighting other plugins over `order` — for one screen of space. Not worth it.
 </details>
 
 <details>
 <summary><b>Do I need to restart DSH?</b></summary>
 
-Installing/uninstalling needs a `dsh web` restart; the day-to-day switches do not — they apply live
-and are remembered.
+Editing `lib/client.js` (and installing/uninstalling) does — the client half is read into memory at
+startup and served with a long cache. The collapse toggle does not: it applies live and is remembered.
+</details>
+
+<details>
+<summary><b>How do I restore the original layout?</b></summary>
+
+Expand the panel list by clicking the header, then clear `dsh-layout-tweaks:v1` from `localStorage`
+(or turn ① off as shown in [Configuration](#configuration)). To remove it at the assembly level, see
+*Install*.
+</details>
+
+<details>
+<summary><b>How can I verify the footer is untouched?</b></summary>
+
+Open the fixture at `test/fixture.html?on=1` (or `&collapsed=1`); the bottom-right badge reports
+**"footer nodes written to: 0 (expected 0)"**. That page reproduces the real footer shape (icon
+buttons / entry modules / a multi-control card / Settings), so a non-zero number means the boundary is
+broken.
 </details>
 
 ## Development
@@ -293,7 +280,8 @@ and are remembered.
 No build step — `lib/` is the artifact:
 
 ```bash
-# offline pre-flight (syntax / module protocol / factory export / host half / markers / files — 17 checks)
+# offline pre-flight (syntax / module protocol / factory export / host half /
+#   markers / footer-untouched reverse assertions / required files — 24 checks)
 # — this is what catches the classic client-plugin failure: the whole stylesheet lives in a template
 #   literal, so a stray backtick in a comment terminates it and the module fails to import in DSH
 npm test
@@ -307,10 +295,9 @@ npm test
 **Run `npm test` before pushing** — client-plugin mistakes only surface in the browser, and this script
 needs neither DSH nor a browser.
 
-The fixture ships three kinds of footer entries (icon buttons, entry modules, a multi-control card)
-plus an "Example new module", so all four classification branches are covered by one page. Edit the
-`CSS` constant or `BOTTOM_KEEP_SELECTORS` in `lib/client.js` and refresh the browser to see the
-result.
+The fixture reproduces the real footer shape (including another plugin's `order` rule) and ships a
+self-check: **the number of footer nodes written to must be 0**. Edit the `CSS` constant in
+`lib/client.js` and refresh the browser to see the result.
 
 ## License
 

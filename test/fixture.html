@@ -7,12 +7,13 @@
   离线夹具：用实测的 DSH Web 客户端 DOM（class 名与层级均取自真机核对结果）
   复刻「会话头上边栏 + 左侧栏」，用于在不登录 GUI 的前提下验证本插件的 CSS 重排。
 
-  footerActions 里刻意复刻了真机的三层形状（含一层无属性包装 div，以及
-  footArea 中间那个装着用量卡片的独立容器），用来验证运行时分类：
-    · 检查更新 / 远程访问          → 图标按钮，应常驻底部
-    · 上下文洞察 / 会话管理        → 功能入口，应并入折叠块
-    · DeepSeek 今日消费（卡片）     → 多控件卡片 + 位于另一容器，应常驻底部且不被拆动
-    · 示例新模块（无任何特征）      → 模拟未来插件，应「默认」并入折叠块
+  底部区域刻意复刻了真机的形状，作为**零干预回归用例**：
+    · 检查更新 / 远程访问      → 图标按钮
+    · 上下文洞察 / 会话管理    → 功能入口
+    · DeepSeek 今日消费        → 多控件卡片，位于底部区的另一个子容器
+    · 设置                     → 在自己的容器里
+  本插件不应给这批节点任何 CSS 规则、也不应写入任何属性 ——
+  右下角浮层会实时报告「底部区域被本插件写入的节点数」，该数必须为 0。
 
   打开方式：
     fixture.html                  → 关闭插件（before）
@@ -42,9 +43,10 @@
     border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;
   }
   .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.zz-newEntry,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
-  /* 真机里这两个入口在 footerActions（横向容器）中靠 flex:1 占满宽度。
-     被并入折叠块后它们进入纵向容器（侧栏根），同一个 flex:1 会变成「纵向抢高度」：
-     条目被撑高、工作区列表（flex:1）被挤成 0 高度。夹具复刻此点作为回归用例。 */
+  /* 真机里这两个入口靠 flex:1 占满宽度（它们的父容器是横向 flex）。
+     夹具保留这个 flex:1：历史上「把入口搬进侧栏根」的做法会让同一个 flex:1
+     变成「纵向抢高度」—— 条目被撑高、工作区列表（flex:1）被挤成 0 高度。
+     现在本插件不再搬动任何底部条目，这行只是把真机的约束留在夹具里当反面用例。 */
   .lc-ov-entry,.sm-footerBtn{flex:1 1 auto}
   .hHd-Xa_panelRow{width:auto}
   .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.lc-ov-entry:hover,.sm-footerBtn:hover,.zz-newEntry:hover,
@@ -92,10 +94,12 @@
 
   .fixture-note{position:fixed;right:12px;bottom:12px;padding:8px 12px;border-radius:10px;
     background:rgba(0,0,0,.72);color:#fff;font-size:12px;line-height:18px;z-index:9999}
+  .fixture-note b{color:#7ef0a0}
+  .fixture-note b.bad{color:#ff8b8b}
 
-  /* 复刻真机上另一个插件的排序规则（实测存在，特异性 (0,6,0)）：
-     它会把这批条目设成 order:1 —— 本插件若不给 order 加 !important 就会被它整片压掉，
-     入口于是排到侧栏最前面。这条规则留在夹具里当作回归用例。 */
+  /* 复刻真机上另一个插件的排序规则（实测存在，特异性 (0,6,0)）。
+     本插件已不再参与底部条目的排序，这条规则留在夹具里只是复刻真实环境：
+     底部区域的外观必须与「没有任何本插件干预」时完全一致。 */
   [data-dsh-frame]:not([data-sidebar-collapsed]) [class*="footerActions"] >
     [data-slot="sidebar.footer.action"] > :not([data-dsh-part="entry"]):not([class*="entryRow"]) { order: 1 }
 </style>
@@ -129,7 +133,8 @@
 
         <div class="hHd-Xa_footArea">
           <div class="hHd-Xa_footerActions">
-            <!-- 真机里 footerActions 之下是槽位锚点宿主（无 class 的透明 div），条目是它的直接子元素 -->
+            <!-- 真机里 footerActions 之下是槽位锚点宿主（无 class 的透明 div），条目是它的直接子元素。
+                 本插件不该碰这一层里的任何节点。 -->
             <div data-slot="sidebar.footer.action" style="display:contents">
               <button class="WYT-ka_trigger" aria-label="检查更新">⟳</button>
               <div class="fThDlq_entryRow"><button class="fThDlq_trigger" aria-label="远程访问">⇄</button></div>
@@ -138,7 +143,7 @@
               <button class="zz-newEntry" aria-label="示例新模块"><span class="dsh-fixture-dot"></span>示例新模块</button>
             </div>
           </div>
-          <!-- 用量卡片在 footArea 的另一个子容器里：本插件不应给它打透明标记 -->
+          <!-- 用量卡片在底部区的另一个子容器里 -->
           <div class="zz-usage">
             <div class="cvtkAW_footCard">
               <button class="cvtkAW_footMain" aria-label="打开使用统计设置">DeepSeek 今日消费 ¥0.73</button>
@@ -200,20 +205,38 @@
     const params = new URLSearchParams(location.search);
     const note = document.getElementById('note');
     if (params.get('on') !== '1') {
-      note.textContent = 'fixture：插件未启用（?on=1 启用）';
+      note.innerHTML = 'fixture：插件未启用（<b>?on=1</b> 启用）';
       return;
     }
     const registration = window.__DSH_LT_REGISTRATION__;
-    if (!registration) { note.textContent = 'fixture：client.js 未注册模块'; return; }
+    if (!registration) { note.innerHTML = 'fixture：<b class="bad">client.js 未注册模块</b>'; return; }
     const plugin = registration.factory();
     const collapsed = params.get('collapsed') === '1';
-    const state = { headerTwoRows: true, foldEntries: true, collapsed: collapsed, bottomKeep: [] };
     try {
-      if (collapsed) localStorage.setItem(plugin.name + ':v1', JSON.stringify(state));
+      // 夹具走 localStorage 之外的入口，这里只用来复刻「上次留下的折叠态」。
+      if (collapsed) localStorage.setItem(plugin.name + ':v1', JSON.stringify({ headerTwoRows: true, collapsed: true }));
       else localStorage.removeItem(plugin.name + ':v1');
     } catch (e) { /* file:// 下 localStorage 可能不可写，忽略 */ }
     plugin.apply({ effect(fn) { fn(); } });
-    note.textContent = 'fixture：插件已启用（' + plugin.name + (collapsed ? ' · 折叠态' : '') + '）';
+
+    /** 底部区域零干预自检：统计被本插件写入过属性的节点。 */
+    function auditFooter() {
+      const sel = '[data-dsh-lt], [data-dsh-lt-collapsed], [data-dsh-lt-box], [data-dsh-lt-fold], [data-dsh-lt-keep], [data-dsh-lt-settings]';
+      const footArea = document.querySelector('.hHd-Xa_footArea');
+      const touched = footArea
+        ? Array.from(footArea.querySelectorAll(sel)).filter((el) => !el.classList.contains('dsh-lt-head'))
+        : [];
+      const head = document.getElementById(plugin.name + '-head');
+      const ok = touched.length === 0;
+      note.innerHTML =
+        'fixture：插件已启用（' + plugin.name + (collapsed ? ' · 折叠态' : '') + '）<br>' +
+        '折叠头：' + (head ? '已挂载' : '<b class="bad">缺失</b>') +
+        '（下一个兄弟是 ' + (head && head.nextElementSibling ? head.nextElementSibling.tagName.toLowerCase() : '—') + '）<br>' +
+        '底部区域被写入的节点数：<b' + (ok ? '' : ' class="bad"') + '>' + touched.length + '</b>（应为 0）';
+    }
+
+    // 等一帧，让 MutationObserver + rAF 的挂载流程跑完。
+    requestAnimationFrame(function () { requestAnimationFrame(auditFooter); });
   })();
 </script>
 </body>

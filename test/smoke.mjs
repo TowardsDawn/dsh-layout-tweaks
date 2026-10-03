@@ -9,7 +9,8 @@
  *   2. 必须按 `window.__ModuleLoader__.load({ id, factory })` 协议注册自己；
  *   3. `factory()` 必须返回 `{ name, apply }`；
  *   4. host 半必须能被 import 且导出 `name` / `apply`；
- *   5. 关键标记与必需文件必须存在（防止误删 / 漏提交）。
+ *   5. 关键标记与必需文件必须存在（防止误删 / 漏提交）；
+ *   6. **源码不得再出现底部区域的干预**（v0.3.0 的边界，防止旧逻辑回潮）。
  *
  * 用法：`npm test` 或 `node test/smoke.mjs`
  */
@@ -77,8 +78,25 @@ try {
 
 /* ---------- 5：关键标记与必需文件 ---------- */
 
-for (const token of ['data-dsh-lt-box', 'data-dsh-lt-fold', 'data-dsh-lt-keep', 'data-dsh-lt-settings', '!important']) {
+for (const token of ['dsh-lt-head', 'dsh-lt-caret', 'header-two-rows', 'data-dsh-lt-collapsed', 'conversation.session.header']) {
 	check(`源码包含 ${token}`, source.includes(token));
+}
+
+/*
+ * 6：边界防回归 —— v0.3.0 起本插件**完全不碰侧栏底部区域**。
+ * 这几个标记属于已废弃的「入口并入折叠块」实现；一旦它们重新出现，
+ * 说明那段会改变容器 flex 方向、并与其他插件抢 order 的逻辑又回来了。
+ */
+for (const token of [
+	'data-dsh-lt-fold',
+	'data-dsh-lt-keep',
+	'data-dsh-lt-box',
+	'data-dsh-lt-settings',
+	'BOTTOM_KEEP_SELECTORS',
+	'sidebar.footer.action',
+	'footerActions',
+]) {
+	check(`源码不包含 ${token}（底部区域零干预）`, !source.includes(token));
 }
 
 check('夹具存在', existsSync(join(ROOT, 'test', 'fixture.html')));
