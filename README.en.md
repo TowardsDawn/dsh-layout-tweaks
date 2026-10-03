@@ -19,9 +19,8 @@ Render-layer only · touches no other plugin · no build step
 
 ## What it does
 
-The DSH Web GUI packs every session-header control into a single row, and the sidebar keeps
-「Context insight / Session manager」 at the very bottom while the panel modules (Plugins, Task board,
-Skill center, SSH) eat the top of the column. This plugin fixes all three, and:
+The DSH Web GUI packs every session-header control into a single row, the panel modules (Plugins, Task board,
+Skill center, SSH) eat the top of the column and the bottom of the column. This plugin fixes all three, and:
 
 - **claims no slot** and **changes no other plugin's code**;
 - works purely through injected CSS plus one self-owned collapse header — the React tree never notices;
