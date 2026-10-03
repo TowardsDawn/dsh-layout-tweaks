@@ -6,7 +6,7 @@
 
 Render-layer only · touches no other plugin · no build step · new plugin entries land in the block automatically
 
-[![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.2.4-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -183,7 +183,7 @@ The attributes are maintained by JS on every DOM change (`MutationObserver` +
 `requestAnimationFrame` throttling); the classification rules live in
 [Inclusion rules](#inclusion-rules-what-folds-what-stays).
 
-> **Four real traps we hit**
+> **Five real traps we hit**
 >
 > 1. **`order` applies to the *layout* flex item, while selectors follow the *DOM* hierarchy.**
 >    `display:contents` only makes a container transparent for layout; in the DOM it is still the parent
@@ -206,6 +206,18 @@ The attributes are maintained by JS on every DOM change (`MutationObserver` +
 >    `[data-dsh-lt-fold]{ order:15 }` and pushed the entries to the very top of the sidebar. Every
 >    `order` declaration here now carries `!important`: since the classification is ours alone to
 >    decide, its ordering must not be overridable by a same-property rule.
+> 5. **A flex value from a row container becomes "grab height" in a column container.** Those two
+>    entries used to sit in `footerActions` (`display:flex`, a row) where `flex:1` filled the width.
+>    After `display:contents` they land in the sidebar root (`flex-direction:column`), and the very
+>    same `flex:1` stretches them vertically — measured: the entry grew to 125px (normally 36px) and
+>    the workspace list (`flex:1`) was squeezed to 89px against 234px of content, collapsing to zero
+>    on a real client ("the workspace list disappeared"). Hence classified entries always get
+>    `flex:0 0 auto !important`.
+>
+>    The same reason explains **why "Check for updates / Remote access" cannot return to the same row
+>    as Settings**: Settings lives inside its own container (`settingsArea`), while those entries are
+>    independent flex items of the root column, so each takes its own row. The plugin orders them
+>    after the usage card and before Settings — right next to their native position.
 
 ### ③ The collapse header
 

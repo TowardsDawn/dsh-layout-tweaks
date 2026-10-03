@@ -6,7 +6,7 @@
 
 纯渲染层实现 · 不修改任何其他插件 · 免构建 · 新插件入口自动归位
 
-[![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.2.4-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -245,7 +245,7 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 
 分类属性由 JS 在每次 DOM 变更后（`MutationObserver` + `rAF` 节流）维护，规则见[纳入规则](#纳入规则哪些进折叠块哪些留底部)。
 
-> **实现笔记（四个真踩过的坑）**
+> **实现笔记（五个真踩过的坑）**
 >
 > 1. **`order` 作用于「布局」上的 flex item，而选择器必须按「DOM 层级」书写。** `display:contents` 只让容器在布局上透明，它在 DOM 里仍是那些条目的父元素 —— 最初把选择器写成直接子级，结果匹配不到任何条目，它们保持默认 `order:0` 全部堆到侧栏顶上。
 > 2. **基线规则的特异性会反噬分类规则。** 基线选择器更长、特异性更高，会把 `[data-dsh-lt-fold]{ order:15 }` 全部盖掉（现象：所有条目都停在 `order:40`）。解决办法是给基线套 `:where()`，把它的特异性压到最低。

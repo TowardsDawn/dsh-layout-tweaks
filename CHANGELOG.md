@@ -2,6 +2,22 @@
 
 本项目的版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.4] - 2026-10-04
+
+### 修复
+
+- **入口被撑高、工作区列表消失**：`display:contents` 把条目从 `footerActions`（`display:flex`，横向容器）
+  搬进了侧栏根（`flex-direction:column`，纵向容器），而这些条目原本靠 `flex:1` 在横向容器里占满宽度 ——
+  到了纵向容器里，同一个 `flex:1` 就变成「**纵向抢高度**」：入口被撑到 125px（正常 36px），
+  工作区列表（`flex:1`）被压到 89px 而内容需要 234px，真机上直接被压成 0（看起来"列表不见了"）。
+  现在 `[data-dsh-lt-fold]` 与 `[data-dsh-lt-keep]` 都带 `flex:0 0 auto !important`，各按内容高度排列。
+- **底部控件位置回退**：「检查更新 / 远程访问」的 `order` 由 40 调整为 45，排在用量卡片之后、设置之前，
+  贴近宿主原生位置。
+
+### 说明
+
+- 关闭「把入口并入折叠块」时不会触发上述问题：那时不拆 `footerActions`，容器方向没有被改变。
+
 ## [0.2.3] - 2026-10-04
 
 ### 修复

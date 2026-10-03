@@ -42,6 +42,10 @@
     border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;
   }
   .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.zz-newEntry,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
+  /* 真机里这两个入口在 footerActions（横向容器）中靠 flex:1 占满宽度。
+     被并入折叠块后它们进入纵向容器（侧栏根），同一个 flex:1 会变成「纵向抢高度」：
+     条目被撑高、工作区列表（flex:1）被挤成 0 高度。夹具复刻此点作为回归用例。 */
+  .lc-ov-entry,.sm-footerBtn{flex:1 1 auto}
   .hHd-Xa_panelRow{width:auto}
   .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.lc-ov-entry:hover,.sm-footerBtn:hover,.zz-newEntry:hover,
   .cvtkAW_footMain:hover,.VOzbGW_trigger:hover,.WYT-ka_trigger:hover,.fThDlq_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
