@@ -51,7 +51,7 @@ Skill center, SSH) eat the top of the column and the bottom of the column. This 
 
 ```bash
 # recommended
-dsh plugin --profile web add <absolute path to this folder>
+dsh plugin --profile web add "github:TowardsDawn/dsh-layout-tweaks"
 ```
 
 Or manually add the package to `<DSH_HOME>/profiles/web/package.json` (a `file:` dependency plus one
