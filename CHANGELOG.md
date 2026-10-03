@@ -2,6 +2,26 @@
 
 本项目的版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026-10-04
+
+### 修复
+
+- **真机层级假设错误（表现为「插件装了但布局没变」）**：旧版按「`footArea` → `footerActions` → 条目」两级结构定位
+  并写死选择器，而实测真机是三层：`footerActions` 之下还有一层**槽位锚点宿主**
+  （`[data-slot="sidebar.footer.action"]`，无 class 的透明 div），且 `footArea` 内除 `footerActions` / `settingsArea`
+  外还有第三个容器（用量卡片所在的容器）。结果分类器只看到那层宿主、把它当成一个「多控件卡片」判为常驻底部，
+  `data-dsh-lt-fold` 一个都没有 —— 界面上就是「折叠头在、入口没进折叠块」。
+  现在改为：`footerActions` 用槽位锚点的父元素定位；条目容器优先取锚点自身，锚点缺失时向下穿透单子元素包装层；
+  「底部区 → … → 条目容器」整条链由 JS 打 `data-dsh-lt-box` 标记，**CSS 只认属性，不再写死层级**。
+- **「设置」没有留底**：`settingsArea` 位于底部区内部、层级不固定，改为由 JS 在设置锚点的父容器上打
+  `data-dsh-lt-settings` 标记后按属性排序。
+- **`order` 基线特异性**：基线改用 `:where()` 压低特异性，避免盖住 `[data-dsh-lt-fold]` / `[data-dsh-lt-keep]` 的排序。
+
+### 夹具
+
+- `test/fixture.html` 升级为**真机层级复刻**：`footerActions` 下加一层槽位锚点宿主、`footArea` 内加入用量卡片的独立容器、
+  设置区加入锚点宿主。这次修复之所以能先回归再交付，靠的就是夹具先复现了真机的三层形状。
+
 ## [0.2.0] - 2026-10-03
 
 ### 变更

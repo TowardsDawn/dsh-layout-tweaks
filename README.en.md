@@ -6,7 +6,7 @@
 
 Render-layer only · touches no other plugin · no build step · new plugin entries land in the block automatically
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -149,40 +149,57 @@ inserts a line break **without touching the DOM** — the `::after` pseudo-eleme
 … [data-slot="conversation.session.header.actions"] > *:nth-child(n+2){ order:10 } /* the rest */
 ```
 
-### ② The fold: `order` plus runtime classification
+### ② The fold: attribute-driven, no layer guessing
 
-The sidebar root is a flex column. After `display:contents` on the footer area and its
-`footerActions` wrapper, the footer entries become flex items of the root, so `order` can position
-them precisely:
+The sidebar root is a flex column. What actually feeds entries into that layout are three runtime
+attributes written by JS:
+
+| Attribute | Written on | Purpose |
+|-----------|-----------|---------|
+| `data-dsh-lt-box` | every element on the chain "footer area → … → entry container" | makes the whole chain `display:contents`, so entries become **layout** flex items of the root |
+| `data-dsh-lt-fold` / `data-dsh-lt-keep` | the real entry elements | decides fold vs. bottom-resident |
+| `data-dsh-lt-settings` | the parent container of the settings anchor | keeps Settings at the very bottom |
+
+Ordering then needs nothing but attribute selectors (`:where()` keeps the baseline's specificity at
+zero so it can never beat the classified rules):
 
 ```css
-… > div > *:last-child{ display:contents }                       /* footArea */
-… > div > *:last-child > *:first-child{ display:contents }       /* footerActions */
-… > div > *:last-child > *:first-child
-        > *:not([data-dsh-lt-fold]):not([data-dsh-lt-keep]){ order:40 }   /* unclassified → bottom */
-… > div > .dsh-lt-head{ order:9 }                                /* collapse header */
-… > div > nav{ order:10 }                                        /* panel list */
-[data-dsh-lt-fold]{ order:15 }                                   /* entry modules → the fold */
-[data-dsh-lt-keep]{ order:40 }                                   /* bottom-resident controls */
-… > div > div:has(> [data-slot="sidebar.workspaces"]){ order:30 } /* workspace list */
-… > div > *:last-child > *:last-child{ order:50 }                /* settings */
+[data-dsh-lt-box]{ display:contents }
+… > div > *{ order:40 }                              /* baseline: stay at the bottom */
+… :where([data-dsh-lt-box] > *){ order:40 }           /* same for elements inside the transparent chain */
+… > div > *:nth-child(-n+2){ order:0 }                /* brand row + New Session */
+… > div > .dsh-lt-head{ order:9 }                     /* collapse header */
+… > div > nav{ order:10 }                             /* panel list */
+[data-dsh-lt-fold]{ order:15 }                        /* entry modules → the fold */
+… > div > div:has(> [data-slot="sidebar.workspaces"]){ order:30 }  /* workspace list */
+[data-dsh-lt-keep]{ order:40 }                        /* bottom-resident controls */
+[data-dsh-lt-settings]{ order:50 }                    /* settings */
 ```
 
-The classification attributes are maintained by JS on every DOM change (`MutationObserver` +
-`requestAnimationFrame` throttling); the rules are in [Inclusion rules](#inclusion-rules-what-folds-what-stays).
+`footerActions` is located through the parent of the slot anchor `[data-slot="sidebar.footer.action"]`;
+the entry container is that anchor itself (the transparent host the renderer writes), falling back to
+"drill through single-child wrappers" when the anchor is missing.
 
-> **Two real traps we hit**
+The attributes are maintained by JS on every DOM change (`MutationObserver` +
+`requestAnimationFrame` throttling); the classification rules live in
+[Inclusion rules](#inclusion-rules-what-folds-what-stays).
+
+> **Three real traps we hit**
 >
 > 1. **`order` applies to the *layout* flex item, while selectors follow the *DOM* hierarchy.**
->    `display:contents` only makes `footerActions` transparent for layout; in the DOM it is still the
->    parent of those entries. Writing `… > div > [class*="lc-ov-entry"]` (as a direct child) matches
->    nothing, and the entries keep `order: 0`, piling up at the very top. The correct selector goes
->    through `*:last-child > *:first-child`.
-> 2. **The baseline rule's specificity can beat the classification rules.**
->    `… > *:last-child > *:first-child > *{ order:40 }` is longer than
->    `[data-dsh-lt-fold]{ order:15 }` and therefore wins, flattening every classified entry back to
->    `order:40`. The baseline needs `:not([data-dsh-lt-fold]):not([data-dsh-lt-keep])` so it only
->    governs unclassified entries.
+>    `display:contents` only makes a container transparent for layout; in the DOM it is still the parent
+>    of those entries. Written as a direct child, the selector matched nothing and the entries kept
+>    `order: 0`, piling up at the very top.
+> 2. **The baseline rule's specificity can beat the classification rules.** A longer baseline selector
+>    flattened every classified entry back to `order:40`. Wrapping the baseline in `:where()` drops its
+>    specificity to zero.
+> 3. **Never guess the layering.** An earlier version hard-coded "footer area → `footerActions` →
+>    entries", but the real client has three layers: below `footerActions` sits another *slot anchor
+>    host* (`[data-slot="sidebar.footer.action"]`, a class-less transparent div), and the footer area
+>    holds a third container besides `footerActions` / `settingsArea` (the usage card). With the
+>    hard-coded layers the classifier only saw that host, judged the whole layer a "card" and left it at
+>    the bottom — the plugin looked installed but inert. Now the layering is resolved on the spot and
+>    the CSS only reads attributes.
 
 ### ③ The collapse header
 
@@ -194,9 +211,10 @@ is ever moved. It hides itself while the sidebar is collapsed to the 56px rail.
 ### Anchors used
 
 `data-slot="conversation.session.header"` (+ `.actions` / `.utilities` / `.corner`),
-`data-slot="sidebar"`, `data-slot="sidebar.workspaces"`, the sidebar root's direct `nav`, the footer
-area's first child, and accessible names / class suffixes of the entries themselves. **No CSS-Module
-hashes** (such as `wSkVaW_` / `hHd-Xa_`), which change between releases.
+`data-slot="sidebar"`, `data-slot="sidebar.workspaces"`, `data-slot="sidebar.settings"`, the
+`sidebar.footer.action` anchor (its parent *and* itself), the sidebar root's direct `nav`, and
+accessible names / class suffixes of the entries themselves. **No CSS-Module hashes** (such as
+`wSkVaW_` / `hHd-Xa_`), which change between releases.
 
 ## Compatibility
 

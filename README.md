@@ -6,7 +6,7 @@
 
 纯渲染层实现 · 不修改任何其他插件 · 免构建 · 新插件入口自动归位
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -226,33 +226,40 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 
 `::after` 伪元素的妙处：它天然是宿主元素内部的 flex item，因此**不需要往 DOM 里插任何节点**就能造出断行点，React reconciliation 完全无感。
 
-### ② 折叠块：`order` 排序 + 运行时分类
+### ② 折叠块：属性驱动，不猜层级
 
-侧栏根（ui-sidebar 的 SidebarRoot 根节点）是 `display:flex; flex-direction:column`，其直接子元素依次是 品牌行 / 新会话 / 面板列表(`nav`) / 工作区区 / 底部区。
+侧栏根（ui-sidebar 的 SidebarRoot 根节点）是 `display:flex; flex-direction:column`。真正让条目参与这套排版的，是 JS 在运行期打出的三类属性：
 
-把底部区与它的第一个子元素（`footerActions`）逐层 `display:contents` 打开后，底部条目在**布局上**变成侧栏根的 flex item，于是 `order` 可以精确排序：
+| 属性 | 打在哪 | 作用 |
+|------|--------|------|
+| `data-dsh-lt-box` | 「底部区 → … → 条目容器」这条链上的每个元素 | 统一 `display:contents`，让条目在**布局上**成为侧栏根的 flex item |
+| `data-dsh-lt-fold` / `data-dsh-lt-keep` | 真正的条目元素 | 决定进折叠块还是留在底部 |
+| `data-dsh-lt-settings` | 「设置」锚点的父容器 | 保证设置留在最底部 |
+
+于是排序只需要属性选择器（`:where()` 把基线特异性压到最低，免得盖住分类结果）：
 
 ```css
-… > div > *:last-child{ display:contents }                       /* footArea */
-… > div > *:last-child > *:first-child{ display:contents }       /* footerActions */
-… > div > *{ order:40 }                                          /* 基线：留底 */
-… > div > *:last-child > *:first-child
-        > *:not([data-dsh-lt-fold]):not([data-dsh-lt-keep]){ order:40 }   /* 未分类者留底 */
-… > div > *:nth-child(-n+2){ order:0 }                           /* 品牌行 + 新会话 */
-… > div > .dsh-lt-head{ order:9 }                                /* 折叠头 */
-… > div > nav{ order:10 }                                        /* 面板列表 */
-[data-dsh-lt-fold]{ order:15; margin:0 2px 4px }                 /* 功能入口 → 折叠块 */
-[data-dsh-lt-keep]{ order:40 }                                   /* 底部常驻控件 */
-… > div > div:has(> [data-slot="sidebar.workspaces"]){ order:30 } /* 工作区列表 */
-… > div > *:last-child > *:last-child{ order:50 }                /* 设置 */
+[data-dsh-lt-box]{ display:contents }
+… > div > *{ order:40 }                             /* 基线：留底 */
+… :where([data-dsh-lt-box] > *){ order:40 }          /* 透明链内的元素同样留底 */
+… > div > *:nth-child(-n+2){ order:0 }               /* 品牌行 + 新会话 */
+… > div > .dsh-lt-head{ order:9 }                    /* 折叠头 */
+… > div > nav{ order:10 }                            /* 面板列表 */
+[data-dsh-lt-fold]{ order:15; margin:0 2px 4px }     /* 功能入口 → 折叠块 */
+… > div > div:has(> [data-slot="sidebar.workspaces"]){ order:30 }  /* 工作区列表 */
+[data-dsh-lt-keep]{ order:40 }                       /* 底部常驻控件 */
+[data-dsh-lt-settings]{ order:50 }                   /* 设置 */
 ```
+
+`footerActions` 用槽位锚点 `[data-slot="sidebar.footer.action"]` 的父元素定位；条目容器优先取该锚点自身（渲染器写下的透明宿主），锚点缺失时退化为「向下穿透单子元素包装层」。
 
 分类属性由 JS 在每次 DOM 变更后（`MutationObserver` + `rAF` 节流）维护，规则见[纳入规则](#纳入规则哪些进折叠块哪些留底部)。
 
-> **实现笔记（两个真踩过的坑）**
+> **实现笔记（三个真踩过的坑）**
 >
-> 1. **`order` 作用于「布局」上的 flex item，而选择器必须按「DOM 层级」书写。** `display:contents` 只让 `footerActions` 在布局上透明，它在 DOM 里仍是那些条目的父元素 —— 最初写成 `… > div > [class*="lc-ov-entry"]`（直接子级）匹配不到任何东西，条目保持默认 `order:0` 全部堆到侧栏顶上。正确写法要经过 `*:last-child > *:first-child` 这一层。
-> 2. **基线规则的特异性会反噬分类规则。** `… > *:last-child > *:first-child > *{ order:40 }` 比 `[data-dsh-lt-fold]{ order:15 }` 更长、特异性更高，会把分类结果全部盖掉（现象：所有条目都停在 `order:40`）。所以基线要加 `:not([data-dsh-lt-fold]):not([data-dsh-lt-keep])`，只管未分类的条目。
+> 1. **`order` 作用于「布局」上的 flex item，而选择器必须按「DOM 层级」书写。** `display:contents` 只让容器在布局上透明，它在 DOM 里仍是那些条目的父元素 —— 最初把选择器写成直接子级，结果匹配不到任何条目，它们保持默认 `order:0` 全部堆到侧栏顶上。
+> 2. **基线规则的特异性会反噬分类规则。** 基线选择器更长、特异性更高，会把 `[data-dsh-lt-fold]{ order:15 }` 全部盖掉（现象：所有条目都停在 `order:40`）。解决办法是给基线套 `:where()`，把它的特异性压到最低。
+> 3. **别猜层级。** 曾经按「底部区 → `footerActions` → 条目」两级写死选择器，真机却是三层：`footerActions` 之下还有一层**槽位锚点宿主**（`[data-slot="sidebar.footer.action"]`，无 class 的透明 div），而底部区里除 `footerActions` / `settingsArea` 外还有第三个容器（用量卡片）。写死层级时分类器只看到那层宿主、把整层判成一个「卡片」留在底部，表现就是「插件装了但入口没进折叠块」。现在层级由 JS 在现场判定并打标记，CSS 只认属性。
 
 ### ③ 折叠头
 
@@ -272,7 +279,7 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 | 侧栏宿主 / 根 | `[data-slot="sidebar"]` → 其第一个子元素 |
 | 面板列表 | 侧栏根的直接子元素 `nav` |
 | 工作区区 | 侧栏根的子元素 `div:has(> [data-slot="sidebar.workspaces"])` |
-| 底部条目容器 | 侧栏根的最后一个子元素（底部区）→ 它的第一个子元素（`footerActions`） |
+| 底部条目容器 | 锚点 `[data-slot="sidebar.footer.action"]` → 取其父元素（`footerActions`）与锚点自身（条目容器），再向上标记到侧栏根 |
 
 全部为 **`data-slot` 属性、结构关系与条目的可访问名/类名后缀**，**不使用会随版本变化的 CSS Module hash 前缀**（如 `wSkVaW_` / `hHd-Xa_`）。
 

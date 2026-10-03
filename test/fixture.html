@@ -7,10 +7,11 @@
   离线夹具：用实测的 DSH Web 客户端 DOM（class 名与层级均取自真机核对结果）
   复刻「会话头上边栏 + 左侧栏」，用于在不登录 GUI 的前提下验证本插件的 CSS 重排。
 
-  footerActions 里刻意放了三类条目，用来验证运行时分类：
+  footerActions 里刻意复刻了真机的三层形状（含一层无属性包装 div，以及
+  footArea 中间那个装着用量卡片的独立容器），用来验证运行时分类：
     · 检查更新 / 远程访问          → 图标按钮，应常驻底部
     · 上下文洞察 / 会话管理        → 功能入口，应并入折叠块
-    · DeepSeek 今日消费（卡片）     → 多控件卡片，应常驻底部
+    · DeepSeek 今日消费（卡片）     → 多控件卡片 + 位于另一容器，应常驻底部且不被拆动
     · 示例新模块（无任何特征）      → 模拟未来插件，应「默认」并入折叠块
 
   打开方式：
@@ -58,6 +59,7 @@
   .cvtkAW_footCard{display:flex;align-items:center;width:100%}
   .cvtkAW_footCard .cvtkAW_footMain{flex:1 1 auto;width:auto}
   .cvtkAW_footToggle{display:inline-flex;justify-content:center;width:28px;min-height:28px;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}
+  .zz-usage{display:flex;flex-direction:column}
 
   /* ---------- 会话头（模拟 ui-conversation 的形态） ---------- */
   main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
@@ -117,18 +119,26 @@
 
         <div class="hHd-Xa_footArea">
           <div class="hHd-Xa_footerActions">
-            <button class="WYT-ka_trigger" aria-label="检查更新">⟳</button>
-            <div class="fThDlq_entryRow"><button class="fThDlq_trigger" aria-label="远程访问">⇄</button></div>
-            <button class="lc-ov-entry" aria-label="上下文洞察"><span class="dsh-fixture-dot"></span>上下文洞察</button>
-            <button class="sm-footerBtn" aria-label="会话管理"><span class="dsh-fixture-dot"></span>会话管理</button>
+            <!-- 真机里 footerActions 之下是槽位锚点宿主（无 class 的透明 div），条目是它的直接子元素 -->
+            <div data-slot="sidebar.footer.action" style="display:contents">
+              <button class="WYT-ka_trigger" aria-label="检查更新">⟳</button>
+              <div class="fThDlq_entryRow"><button class="fThDlq_trigger" aria-label="远程访问">⇄</button></div>
+              <button class="lc-ov-entry" aria-label="上下文洞察"><span class="dsh-fixture-dot"></span>上下文洞察</button>
+              <button class="sm-footerBtn" aria-label="会话管理"><span class="dsh-fixture-dot"></span>会话管理</button>
+              <button class="zz-newEntry" aria-label="示例新模块"><span class="dsh-fixture-dot"></span>示例新模块</button>
+            </div>
+          </div>
+          <!-- 用量卡片在 footArea 的另一个子容器里：本插件不应给它打透明标记 -->
+          <div class="zz-usage">
             <div class="cvtkAW_footCard">
               <button class="cvtkAW_footMain" aria-label="打开使用统计设置">DeepSeek 今日消费 ¥0.73</button>
               <button class="cvtkAW_footToggle" aria-label="展开用量卡片">⌃</button>
             </div>
-            <button class="zz-newEntry" aria-label="示例新模块"><span class="dsh-fixture-dot"></span>示例新模块</button>
           </div>
           <div class="hHd-Xa_settingsArea">
-            <button class="VOzbGW_trigger" aria-label="设置"><span class="dsh-fixture-dot"></span>设置</button>
+            <div data-slot="sidebar.settings" style="display:contents">
+              <button class="VOzbGW_trigger" aria-label="设置"><span class="dsh-fixture-dot"></span>设置</button>
+            </div>
           </div>
         </div>
       </div>
