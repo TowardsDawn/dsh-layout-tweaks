@@ -1,0 +1,42 @@
+{
+  "name": "dsh-layout-tweaks",
+  "version": "0.1.0",
+  "description": "DSH Web GUI 布局微调：会话头上边栏拆成两行、侧栏底部入口上移、非工作区模块可折叠。纯渲染层实现，不修改任何其他插件。 · Layout tweaks for the DSH Web GUI: two-row session header, sidebar footer entries moved up, collapsible non-workspace modules.",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "client-plugin",
+    "layout",
+    "sidebar",
+    "ui"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

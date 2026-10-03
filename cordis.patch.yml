@@ -1,0 +1,15 @@
+# dsh-layout-tweaks bundle patch —— 把本插件挂进 profile 装配树。
+#
+# dsh 的 bundle 层会读取本文件；只要本包出现在 profile 的
+# `dsh.profile.bundles` 列表里，下面这条 insert 就会把插件条目追加到
+# cordis 装配树（host 半加载包主入口，`dsh.client` 声明让 Web 客户端
+# 额外加载 ./client 作为浏览器半）。
+#
+# 需要临时停用（不卸载）时，改成：
+#   - insert:
+#       - id: dsh-layout-tweaks
+#         name: 'dsh-layout-tweaks'
+#         disabled: true
+- insert:
+    - id: dsh-layout-tweaks
+      name: 'dsh-layout-tweaks'

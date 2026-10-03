@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>dsh-layout-tweaks · fixture</title>
+<!--
+  离线夹具：用实测的 DSH Web 客户端 DOM（class 名与层级均取自真机核对结果）
+  复刻「会话头上边栏 + 左侧栏」，用于在不登录 GUI 的前提下验证本插件的 CSS 重排。
+
+  打开方式：
+    fixture.html             → 关闭插件（before）
+    fixture.html?on=1        → 启用插件（after）
+    fixture.html?on=1&collapsed=1 → 启用插件并处于折叠态
+-->
+<style>
+  :root{
+    --dsw-alias-bg-base:#fff; --dsw-alias-bg-layer-2:#fff;
+    --dsw-alias-label-primary:#1a1a1a; --dsw-alias-label-secondary:#8a8f98;
+    --dsw-alias-border-l2:rgba(0,0,0,.12); --dsw-alias-border-l3:rgba(0,0,0,.08);
+    --dsw-alias-interactive-bg-hover:rgba(0,0,0,.06);
+    --dsw-alias-brand-primary:#4d6bfe;
+    --dsw-specific-sidebar-fill:#f7f7f8;
+  }
+  html,body{margin:0;height:100%}
+  body{font:14px/22px system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}
+  #app{display:flex;height:100%}
+
+  /* ---------- 左侧栏（模拟 ui-sidebar 的形态） ---------- */
+  aside{width:260px;flex:none;background:var(--dsw-specific-sidebar-fill);border-right:.5px solid var(--dsw-alias-border-l3)}
+  .hHd-Xa_root{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:6px 12px}
+  .hHd-Xa_logoRow{display:flex;align-items:center;gap:8px;height:36px}
+  .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.cvtkAW_footMain,.VOzbGW_trigger{
+    display:flex;align-items:center;gap:8px;box-sizing:border-box;width:100%;
+    min-height:36px;margin:0 2px;padding:7px 8px;
+    border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;
+  }
+  .hHd-Xa_panelRow{width:auto}
+  .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.lc-ov-entry:hover,.sm-footerBtn:hover,.cvtkAW_footMain:hover,.VOzbGW_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
+  .hHd-Xa_panelList{display:flex;flex-direction:column;flex:none;gap:4px;margin-bottom:8px}
+  .hHd-Xa_regionArea{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+  .bhn1Oq_header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;color:var(--dsw-alias-label-secondary);font-size:12px}
+  .bhn1Oq_entry{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;color:var(--dsw-alias-label-primary)}
+  .hHd-Xa_footArea{display:flex;flex-direction:column;flex:none}
+  .hHd-Xa_footerActions{display:flex;flex-direction:column}
+  .hHd-Xa_settingsArea{display:flex;flex-direction:column}
+  .dsh-fixture-dot{width:16px;height:16px;flex:none;border-radius:5px;background:currentColor;opacity:.35}
+
+  /* ---------- 会话头（模拟 ui-conversation 的形态） ---------- */
+  main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+  .wSkVaW_header{
+    display:grid;grid-template-columns:auto minmax(0,1fr);
+    box-sizing:border-box;min-height:76px;padding:10px 28px 0 20px;
+    border-bottom:.5px solid var(--dsw-alias-border-l3);flex:none;overflow:hidden;
+  }
+  .wSkVaW_headerLeading{display:flex;align-items:center;gap:8px;grid-area:1/1}
+  .wSkVaW_titleRow{display:flex;align-items:center;gap:0;grid-column:2;min-height:30px;overflow:hidden}
+  .wSkVaW_titleCluster{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+  .wSkVaW_crumbs{display:flex;align-items:center;gap:4px;font-weight:500;white-space:nowrap}
+  .wSkVaW_crumb{overflow:hidden;text-overflow:ellipsis}
+  .wSkVaW_headerActions{display:flex;align-items:center;gap:8px;flex:none}
+  .wSkVaW_headerUtilities{display:flex;align-items:center;gap:8px;margin-left:20px;flex:none}
+  .wSkVaW_headerCorner{display:flex;align-items:center;margin-left:8px;margin-right:-16px;flex:none}
+  .wSkVaW_tabs{display:flex;gap:36px;grid-column:1/-1;margin-top:10px;padding-left:8px;position:relative;z-index:1}
+  .wSkVaW_tab{padding:2px 0;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}
+  .wSkVaW_tabActive{color:var(--dsw-alias-label-primary);font-weight:600}
+
+  .SVAs4q_label{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,.04);white-space:nowrap}
+  .u_actions,.sm-header{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .u_actions>*,.sm-header>*{padding:4px 7px;border-radius:6px;background:rgba(0,0,0,.04)}
+  .dshsl-copy{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:rgba(0,0,0,.04);cursor:pointer}
+  .conversation-body{flex:1;padding:16px 20px;color:var(--dsw-alias-label-secondary)}
+
+  .fixture-note{position:fixed;right:12px;bottom:12px;padding:8px 12px;border-radius:10px;
+    background:rgba(0,0,0,.72);color:#fff;font-size:12px;line-height:18px;z-index:9999}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div data-slot="sidebar" style="display:contents">
+      <div class="hHd-Xa_root">
+        <div class="hHd-Xa_logoRow"><span class="dsh-fixture-dot"></span><b>deepseek harness</b></div>
+        <button class="hHd-Xa_newSession"><span class="dsh-fixture-dot"></span>新会话</button>
+
+        <nav class="hHd-Xa_panelList" aria-label="全局面板">
+          <button class="hHd-Xa_panelRow" aria-label="插件"><span class="dsh-fixture-dot"></span>插件</button>
+          <button class="hHd-Xa_panelRow" aria-label="任务看板"><span class="dsh-fixture-dot"></span>任务看板</button>
+          <button class="hHd-Xa_panelRow" aria-label="技能中心"><span class="dsh-fixture-dot"></span>技能中心</button>
+          <button class="hHd-Xa_panelRow" aria-label="SSH"><span class="dsh-fixture-dot"></span>SSH</button>
+        </nav>
+
+        <div class="hHd-Xa_regionArea">
+          <div data-slot="sidebar.workspaces" style="display:contents">
+            <div class="bhn1Oq_header"><span>工作区</span><span>⌕ ⤢ ▤</span></div>
+            <div class="bhn1Oq_entry"><span class="dsh-fixture-dot"></span>dsh 启动文件</div>
+            <div class="bhn1Oq_entry"><span class="dsh-fixture-dot"></span>DSH 数据目录</div>
+            <div class="bhn1Oq_entry"><span class="dsh-fixture-dot"></span>BUG 检修隔离</div>
+            <div class="bhn1Oq_entry"><span class="dsh-fixture-dot"></span>dsh bug 检查</div>
+            <div class="bhn1Oq_entry"><span class="dsh-fixture-dot"></span>DSH 插件</div>
+            <div class="bhn1Oq_entry"><span class="dsh-fixture-dot"></span>通用工作区</div>
+          </div>
+        </div>
+
+        <div class="hHd-Xa_footArea">
+          <div class="hHd-Xa_footerActions">
+            <button class="lc-ov-entry" aria-label="上下文洞察"><span class="dsh-fixture-dot"></span>上下文洞察</button>
+            <button class="sm-footerBtn sm-footerBtn-rail" aria-label="会话管理"><span class="dsh-fixture-dot"></span>会话管理</button>
+            <button class="cvtkAW_footMain" aria-label="打开使用统计设置">DeepSeek 今日消费 ¥0.73</button>
+          </div>
+          <div class="hHd-Xa_settingsArea">
+            <button class="VOzbGW_trigger VOzbGW_rail" aria-label="设置"><span class="dsh-fixture-dot"></span>设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="wSkVaW_header" data-window-drag>
+      <div class="wSkVaW_headerLeading"></div>
+      <div data-slot="conversation.session.header" style="display:contents">
+        <div class="wSkVaW_titleRow">
+          <div class="wSkVaW_titleCluster">
+            <nav class="wSkVaW_crumbs" aria-label="会话层级"><span class="wSkVaW_crumb">dsh bug 检查</span></nav>
+            <div class="wSkVaW_headerActions">
+              <div data-slot="conversation.session.header.actions" style="display:contents">
+                <span class="SVAs4q_label">标准模式</span>
+                <div class="u_actions"><span>撤销</span><span>恢复</span><span>快照</span><span>对话撤回</span><span>已存 38 份快照 · 2 分钟前</span></div>
+                <div class="sm-header"><span>📥 归档</span><span>☆</span><span>◷</span><span>🏷 标签/备注</span><span>↔ 移动至工作区</span></div>
+                <button class="dshsl-copy" aria-label="复制会话链接">🔗</button>
+              </div>
+            </div>
+          </div>
+          <div class="wSkVaW_headerUtilities"></div>
+          <div class="wSkVaW_headerCorner"></div>
+        </div>
+        <div class="wSkVaW_tabs" role="tablist">
+          <button class="wSkVaW_tab">画布</button>
+          <button class="wSkVaW_tab wSkVaW_tabActive">对话</button>
+          <button class="wSkVaW_tab">轨迹</button>
+          <button class="wSkVaW_tab">上下文</button>
+        </div>
+      </div>
+    </header>
+    <div class="conversation-body">会话内容……</div>
+  </main>
+</div>
+
+<div class="fixture-note" id="note"></div>
+
+<script>
+  // 最小模块加载器存根：让 lib/client.js 能按真实协议注册自己。
+  window.__ModuleLoader__ = {
+    load(registration) { window.__DSH_LT_REGISTRATION__ = registration; },
+  };
+</script>
+<script src="../lib/client.js"></script>
+<script>
+  (function () {
+    const params = new URLSearchParams(location.search);
+    const note = document.getElementById('note');
+    const on = params.get('on') === '1';
+    if (!on) {
+      note.textContent = 'fixture：插件未启用（?on=1 启用）';
+      return;
+    }
+    const registration = window.__DSH_LT_REGISTRATION__;
+    if (!registration) { note.textContent = 'fixture：client.js 未注册模块'; return; }
+    const plugin = registration.factory();
+    if (params.get('collapsed') === '1') {
+      try { localStorage.setItem(plugin.name + ':v1', JSON.stringify({ headerTwoRows: true, moveEntries: true, collapsed: true })); } catch (e) {}
+    }
+    plugin.apply({ effect(fn) { fn(); } });
+    note.textContent = 'fixture：插件已启用（' + plugin.name + '）';
+  })();
+</script>
+</body>
+</html>
