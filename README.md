@@ -66,7 +66,10 @@ DSH Web GUI 里有两处空间浪费：会话头上边栏把所有控件挤在�
 ### 方式一：用 `dsh plugin` 命令（推荐）
 
 ```bash
+<<<<<<< HEAD
 # recommended
+=======
+>>>>>>> 489626e8dde5b4b12dad769fb75bdb05533fefce
 dsh plugin --profile web add "github:TowardsDawn/dsh-layout-tweaks"
 ```
 
