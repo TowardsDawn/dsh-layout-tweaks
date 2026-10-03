@@ -2,6 +2,30 @@
 
 本项目的版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.2] - 2026-10-04
+
+### 修复
+
+- **与第三方插件的 `order` 冲突（表现为「入口跑到侧栏最顶部」）**：页面上另一个插件（用 `data-dsh-frame` /
+  `data-dsh-part` 标记侧栏）会下发这样一条规则：
+
+  ```css
+  [data-dsh-frame]:not([data-sidebar-collapsed]) [class*="footerActions"] >
+  [data-slot="sidebar.footer.action"] > :not([data-dsh-part="entry"]):not([class*="entryRow"])
+  { order: 1 }
+  ```
+
+  它的特异性 `(0,6,0)` 高于本插件的 `(0,3,1)`，把 `[data-dsh-lt-fold]{ order:15 }` 与
+  `[data-dsh-lt-keep]{ order:40 }` 整片压掉 —— 现象是入口虽然被打上分类标记、也确实从底部区"浮"到了侧栏根
+  这一层，却因为 `order` 仍是对方给的 `1` 而排到了**最前面**。
+
+  现在本插件的**所有 `order` 声明都带 `!important`**（对方并没有用 `!important`），排序不再被覆盖。
+
+### 说明
+
+- 该冲突的定位方式：在真机上遍历 `document.styleSheets`，列出所有命中该条目且声明了 `order` 的规则及其
+  特异性，一眼看到"非本插件"的那条；随后注入带 `!important` 的覆盖样式当场验证顺序恢复正确，再落到代码里。
+
 ## [0.2.1] - 2026-10-04
 
 ### 修复

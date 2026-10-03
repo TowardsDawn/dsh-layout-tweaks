@@ -6,7 +6,7 @@
 
 Render-layer only · touches no other plugin · no build step · new plugin entries land in the block automatically
 
-[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -183,7 +183,7 @@ The attributes are maintained by JS on every DOM change (`MutationObserver` +
 `requestAnimationFrame` throttling); the classification rules live in
 [Inclusion rules](#inclusion-rules-what-folds-what-stays).
 
-> **Three real traps we hit**
+> **Four real traps we hit**
 >
 > 1. **`order` applies to the *layout* flex item, while selectors follow the *DOM* hierarchy.**
 >    `display:contents` only makes a container transparent for layout; in the DOM it is still the parent
@@ -199,6 +199,13 @@ The attributes are maintained by JS on every DOM change (`MutationObserver` +
 >    hard-coded layers the classifier only saw that host, judged the whole layer a "card" and left it at
 >    the bottom — the plugin looked installed but inert. Now the layering is resolved on the spot and
 >    the CSS only reads attributes.
+> 4. **Somebody else may already be ordering the same entries.** In a live client another plugin
+>    (marking the sidebar with `data-dsh-frame` / `data-dsh-part`) ships
+>    `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`
+>    with `(0,6,0)` specificity — higher than this plugin's `(0,3,1)` — which flattened
+>    `[data-dsh-lt-fold]{ order:15 }` and pushed the entries to the very top of the sidebar. Every
+>    `order` declaration here now carries `!important`: since the classification is ours alone to
+>    decide, its ordering must not be overridable by a same-property rule.
 
 ### ③ The collapse header
 

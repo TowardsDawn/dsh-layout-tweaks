@@ -6,7 +6,7 @@
 
 纯渲染层实现 · 不修改任何其他插件 · 免构建 · 新插件入口自动归位
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
 [![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
@@ -245,10 +245,12 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 
 分类属性由 JS 在每次 DOM 变更后（`MutationObserver` + `rAF` 节流）维护，规则见[纳入规则](#纳入规则哪些进折叠块哪些留底部)。
 
-> **实现笔记（两个真踩过的坑）**
+> **实现笔记（四个真踩过的坑）**
 >
-> 1. **`order` 作用于「布局」上的 flex item，而选择器必须按「DOM 层级」书写。** `display:contents` 只让 `footerActions` 在布局上透明，它在 DOM 里仍是那些条目的父元素 —— 最初写成 `… > div > [class*="lc-ov-entry"]`（直接子级）匹配不到任何东西，条目保持默认 `order:0` 全部堆到侧栏顶上。正确写法要经过 `*:last-child > *:first-child` 这一层。
-> 2. **基线规则的特异性会反噬分类规则。** `… > *:last-child > *:first-child > *{ order:40 }` 比 `[data-dsh-lt-fold]{ order:15 }` 更长、特异性更高，会把分类结果全部盖掉（现象：所有条目都停在 `order:40`）。所以基线要加 `:not([data-dsh-lt-fold]):not([data-dsh-lt-keep])`，只管未分类的条目。
+> 1. **`order` 作用于「布局」上的 flex item，而选择器必须按「DOM 层级」书写。** `display:contents` 只让容器在布局上透明，它在 DOM 里仍是那些条目的父元素 —— 最初把选择器写成直接子级，结果匹配不到任何条目，它们保持默认 `order:0` 全部堆到侧栏顶上。
+> 2. **基线规则的特异性会反噬分类规则。** 基线选择器更长、特异性更高，会把 `[data-dsh-lt-fold]{ order:15 }` 全部盖掉（现象：所有条目都停在 `order:40`）。解决办法是给基线套 `:where()`，把它的特异性压到最低。
+> 3. **别猜层级。** 曾经按「底部区 → `footerActions` → 条目」两级写死选择器，真机却是三层：`footerActions` 之下还有一层**槽位锚点宿主**（`[data-slot="sidebar.footer.action"]`，无 class 的透明 div），而底部区里除 `footerActions` / `settingsArea` 外还有第三个容器（用量卡片）。写死层级时分类器只看到那层宿主、把整层判成一个「卡片」留在底部，表现就是「插件装了但入口没进折叠块」。现在层级由 JS 在现场判定并打标记，CSS 只认属性。
+> 4. **同一批条目可能已经被别的插件排序了。** 实测有另一个插件（用 `data-dsh-frame` / `data-dsh-part` 标记侧栏）下发 `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`，特异性 `(0,6,0)` —— 比本插件的 `(0,3,1)` 高，把 `[data-dsh-lt-fold]{ order:15 }` 整片压掉，入口于是排到了侧栏最前面。因此本插件**所有 `order` 声明都带 `!important`**：分类结果既然由我们独占决定，排序就不能被同名声明盖过。
 
 ### ③ 折叠头
 
@@ -268,7 +270,7 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 | 侧栏宿主 / 根 | `[data-slot="sidebar"]` → 其第一个子元素 |
 | 面板列表 | 侧栏根的直接子元素 `nav` |
 | 工作区区 | 侧栏根的子元素 `div:has(> [data-slot="sidebar.workspaces"])` |
-| 底部条目容器 | 侧栏根的最后一个子元素（底部区）→ 它的第一个子元素（`footerActions`） |
+| 底部条目容器 | 锚点 `[data-slot="sidebar.footer.action"]` → 取其父元素（`footerActions`）与锚点自身（条目容器），再向上标记到侧栏根 |
 
 全部为 **`data-slot` 属性、结构关系与条目的可访问名/类名后缀**，**不使用会随版本变化的 CSS Module hash 前缀**（如 `wSkVaW_` / `hHd-Xa_`）。
 
