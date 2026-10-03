@@ -1,7 +1,7 @@
 {
   "name": "dsh-layout-tweaks",
-  "version": "0.1.0",
-  "description": "DSH Web GUI 布局微调：会话头上边栏拆成两行、侧栏底部入口上移、非工作区模块可折叠。纯渲染层实现，不修改任何其他插件。 · Layout tweaks for the DSH Web GUI: two-row session header, sidebar footer entries moved up, collapsible non-workspace modules.",
+  "version": "0.2.0",
+  "description": "DSH Web GUI 布局微调：会话头上边栏拆成两行、侧栏功能入口并入可折叠块。纯渲染层实现，不修改任何其他插件，新插件入口自动归位。 · Layout tweaks for the DSH Web GUI: a two-row session header and entry modules folded into a collapsible block.",
   "keywords": [
     "deepseek-harness",
     "dsh",

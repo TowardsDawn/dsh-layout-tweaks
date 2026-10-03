@@ -7,9 +7,15 @@
   离线夹具：用实测的 DSH Web 客户端 DOM（class 名与层级均取自真机核对结果）
   复刻「会话头上边栏 + 左侧栏」，用于在不登录 GUI 的前提下验证本插件的 CSS 重排。
 
+  footerActions 里刻意放了三类条目，用来验证运行时分类：
+    · 检查更新 / 远程访问          → 图标按钮，应常驻底部
+    · 上下文洞察 / 会话管理        → 功能入口，应并入折叠块
+    · DeepSeek 今日消费（卡片）     → 多控件卡片，应常驻底部
+    · 示例新模块（无任何特征）      → 模拟未来插件，应「默认」并入折叠块
+
   打开方式：
-    fixture.html             → 关闭插件（before）
-    fixture.html?on=1        → 启用插件（after）
+    fixture.html                  → 关闭插件（before）
+    fixture.html?on=1             → 启用插件（after）
     fixture.html?on=1&collapsed=1 → 启用插件并处于折叠态
 -->
 <style>
@@ -29,13 +35,15 @@
   aside{width:260px;flex:none;background:var(--dsw-specific-sidebar-fill);border-right:.5px solid var(--dsw-alias-border-l3)}
   .hHd-Xa_root{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:6px 12px}
   .hHd-Xa_logoRow{display:flex;align-items:center;gap:8px;height:36px}
-  .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.cvtkAW_footMain,.VOzbGW_trigger{
-    display:flex;align-items:center;gap:8px;box-sizing:border-box;width:100%;
+  .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.zz-newEntry,.cvtkAW_footMain,.VOzbGW_trigger,.WYT-ka_trigger,.fThDlq_trigger{
+    display:flex;align-items:center;gap:8px;box-sizing:border-box;
     min-height:36px;margin:0 2px;padding:7px 8px;
     border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;
   }
+  .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.zz-newEntry,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
   .hHd-Xa_panelRow{width:auto}
-  .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.lc-ov-entry:hover,.sm-footerBtn:hover,.cvtkAW_footMain:hover,.VOzbGW_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
+  .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.lc-ov-entry:hover,.sm-footerBtn:hover,.zz-newEntry:hover,
+  .cvtkAW_footMain:hover,.VOzbGW_trigger:hover,.WYT-ka_trigger:hover,.fThDlq_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
   .hHd-Xa_panelList{display:flex;flex-direction:column;flex:none;gap:4px;margin-bottom:8px}
   .hHd-Xa_regionArea{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
   .bhn1Oq_header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;color:var(--dsw-alias-label-secondary);font-size:12px}
@@ -44,6 +52,12 @@
   .hHd-Xa_footerActions{display:flex;flex-direction:column}
   .hHd-Xa_settingsArea{display:flex;flex-direction:column}
   .dsh-fixture-dot{width:16px;height:16px;flex:none;border-radius:5px;background:currentColor;opacity:.35}
+
+  /* 底部图标按钮与用量卡片：复刻真机的横向小控件形态 */
+  .WYT-ka_trigger,.fThDlq_trigger{display:inline-flex;justify-content:center;width:32px;min-height:32px;padding:0;margin:0 2px}
+  .cvtkAW_footCard{display:flex;align-items:center;width:100%}
+  .cvtkAW_footCard .cvtkAW_footMain{flex:1 1 auto;width:auto}
+  .cvtkAW_footToggle{display:inline-flex;justify-content:center;width:28px;min-height:28px;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}
 
   /* ---------- 会话头（模拟 ui-conversation 的形态） ---------- */
   main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
@@ -103,12 +117,18 @@
 
         <div class="hHd-Xa_footArea">
           <div class="hHd-Xa_footerActions">
+            <button class="WYT-ka_trigger" aria-label="检查更新">⟳</button>
+            <div class="fThDlq_entryRow"><button class="fThDlq_trigger" aria-label="远程访问">⇄</button></div>
             <button class="lc-ov-entry" aria-label="上下文洞察"><span class="dsh-fixture-dot"></span>上下文洞察</button>
-            <button class="sm-footerBtn sm-footerBtn-rail" aria-label="会话管理"><span class="dsh-fixture-dot"></span>会话管理</button>
-            <button class="cvtkAW_footMain" aria-label="打开使用统计设置">DeepSeek 今日消费 ¥0.73</button>
+            <button class="sm-footerBtn" aria-label="会话管理"><span class="dsh-fixture-dot"></span>会话管理</button>
+            <div class="cvtkAW_footCard">
+              <button class="cvtkAW_footMain" aria-label="打开使用统计设置">DeepSeek 今日消费 ¥0.73</button>
+              <button class="cvtkAW_footToggle" aria-label="展开用量卡片">⌃</button>
+            </div>
+            <button class="zz-newEntry" aria-label="示例新模块"><span class="dsh-fixture-dot"></span>示例新模块</button>
           </div>
           <div class="hHd-Xa_settingsArea">
-            <button class="VOzbGW_trigger VOzbGW_rail" aria-label="设置"><span class="dsh-fixture-dot"></span>设置</button>
+            <button class="VOzbGW_trigger" aria-label="设置"><span class="dsh-fixture-dot"></span>设置</button>
           </div>
         </div>
       </div>
@@ -159,19 +179,21 @@
   (function () {
     const params = new URLSearchParams(location.search);
     const note = document.getElementById('note');
-    const on = params.get('on') === '1';
-    if (!on) {
+    if (params.get('on') !== '1') {
       note.textContent = 'fixture：插件未启用（?on=1 启用）';
       return;
     }
     const registration = window.__DSH_LT_REGISTRATION__;
     if (!registration) { note.textContent = 'fixture：client.js 未注册模块'; return; }
     const plugin = registration.factory();
-    if (params.get('collapsed') === '1') {
-      try { localStorage.setItem(plugin.name + ':v1', JSON.stringify({ headerTwoRows: true, moveEntries: true, collapsed: true })); } catch (e) {}
-    }
+    const collapsed = params.get('collapsed') === '1';
+    const state = { headerTwoRows: true, foldEntries: true, collapsed: collapsed, bottomKeep: [] };
+    try {
+      if (collapsed) localStorage.setItem(plugin.name + ':v1', JSON.stringify(state));
+      else localStorage.removeItem(plugin.name + ':v1');
+    } catch (e) { /* file:// 下 localStorage 可能不可写，忽略 */ }
     plugin.apply({ effect(fn) { fn(); } });
-    note.textContent = 'fixture：插件已启用（' + plugin.name + '）';
+    note.textContent = 'fixture：插件已启用（' + plugin.name + (collapsed ? ' · 折叠态' : '') + '）';
   })();
 </script>
 </body>
