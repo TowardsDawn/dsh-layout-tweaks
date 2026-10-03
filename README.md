@@ -335,15 +335,18 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 本插件**免构建**，`lib/` 即产物：
 
 ```bash
-# 语法与模块注册自检
-node --check lib/client.js
-node --check lib/index.js
+# 离线预检（语法解析 / 模块注册协议 / factory 导出 / host 半 / 关键标记 / 必需文件，共 17 项）
+# —— 客户端插件最容易翻车的一类错误会在这里被拦下：整段 CSS 活在一个模板字符串里，
+#    注释里误用反引号会提前终止它，模块 import 失败（DSH 界面报 "import failed"）
+npm test
 
 # 离线夹具：用实测 DOM 复刻件验证布局（无需登录 GUI）
 #   test/fixture.html                  → 关闭插件（before）
 #   test/fixture.html?on=1             → 启用插件（after）
 #   test/fixture.html?on=1&collapsed=1 → 启用并处于折叠态
 ```
+
+**push 前请先跑 `npm test`**：客户端插件的错误只会在浏览器里炸，而这个脚本不需要 DSH、也不需要浏览器。
 
 夹具里内置了三类底部条目（图标按钮 / 功能入口 / 多控件卡片）外加一个「示例新模块」，用来回归验证分类规则。修改 `lib/client.js` 里的 `CSS` 常量或 `BOTTOM_KEEP_SELECTORS` 后，刷新浏览器即可看到结果；若在真实 DSH 里验证，注意先展开侧栏（收起为 56px 轨道时插件不显示折叠头）。
 

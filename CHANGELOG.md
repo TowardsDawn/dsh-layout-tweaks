@@ -2,6 +2,21 @@
 
 本项目的版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.3] - 2026-10-04
+
+### 修复
+
+- **模块导入失败**（DSH web 启动时提示 `web boot: 1 entry did not activate` /
+  `dsh-layout-tweaks: import failed`）：0.2.2 在 CSS 模板字符串的**注释里用反引号**标注了一条第三方选择器 ——
+  而反引号会**提前终止模板字符串**，整个 `lib/client.js` 因此语法不合法，浏览器侧模块无法导入。
+  现在注释改为无反引号写法，并在该处留下明确警示。
+
+### 新增
+
+- **离线预检 `npm test`**（`test/smoke.mjs`）：不需要 DSH、不需要浏览器，检查语法解析、模块注册协议
+  （`window.__ModuleLoader__.load`）、`factory()` 导出、host 半导出、关键标记与必需文件，共 17 项。
+  0.2.2 那次事故正是它要拦下的类型 —— 建议每次 push 前先跑一次。
+
 ## [0.2.2] - 2026-10-04
 
 ### 修复

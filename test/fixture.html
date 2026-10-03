@@ -88,9 +88,15 @@
 
   .fixture-note{position:fixed;right:12px;bottom:12px;padding:8px 12px;border-radius:10px;
     background:rgba(0,0,0,.72);color:#fff;font-size:12px;line-height:18px;z-index:9999}
+
+  /* 复刻真机上另一个插件的排序规则（实测存在，特异性 (0,6,0)）：
+     它会把这批条目设成 order:1 —— 本插件若不给 order 加 !important 就会被它整片压掉，
+     入口于是排到侧栏最前面。这条规则留在夹具里当作回归用例。 */
+  [data-dsh-frame]:not([data-sidebar-collapsed]) [class*="footerActions"] >
+    [data-slot="sidebar.footer.action"] > :not([data-dsh-part="entry"]):not([class*="entryRow"]) { order: 1 }
 </style>
 </head>
-<body>
+<body data-dsh-frame>
 <div id="app">
   <aside>
     <div data-slot="sidebar" style="display:contents">

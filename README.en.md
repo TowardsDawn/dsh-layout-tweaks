@@ -281,13 +281,19 @@ and are remembered.
 No build step — `lib/` is the artifact:
 
 ```bash
-node --check lib/client.js
-node --check lib/index.js
+# offline pre-flight (syntax / module protocol / factory export / host half / markers / files — 17 checks)
+# — this is what catches the classic client-plugin failure: the whole stylesheet lives in a template
+#   literal, so a stray backtick in a comment terminates it and the module fails to import in DSH
+npm test
+
 # offline fixture (no GUI sign-in needed)
 #   test/fixture.html                  → plugin off  (before)
 #   test/fixture.html?on=1             → plugin on   (after)
 #   test/fixture.html?on=1&collapsed=1 → plugin on, collapsed
 ```
+
+**Run `npm test` before pushing** — client-plugin mistakes only surface in the browser, and this script
+needs neither DSH nor a browser.
 
 The fixture ships three kinds of footer entries (icon buttons, entry modules, a multi-control card)
 plus an "Example new module", so all four classification branches are covered by one page. Edit the
