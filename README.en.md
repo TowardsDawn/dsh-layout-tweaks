@@ -61,7 +61,6 @@ they were, in the same relative order.
 ## Install
 
 ```bash
-# recommended
 dsh plugin --profile web add "github:TowardsDawn/dsh-layout-tweaks"
 ```
 
