@@ -6,10 +6,9 @@
 
 纯渲染层实现 · 不修改任何其他插件 · 不干预侧栏底部区域 · 免构建
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](#)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
-[![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![dsh-plugin](https://img.shields.io/badge/dsh-plugin-blue)](https://github.com/topics/dsh-plugin)
+[![DSH Market 收录徽章](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-zh.svg)](https://dsh.market/)
 
 [功能](#功能) · [效果](#效果) · [安装](#安装) · [配置](#配置) · [工作原理](#工作原理) · [被放弃的尝试](#附录一次被放弃的尝试) · [兼容性](#兼容性) · [FAQ](#faq)
 

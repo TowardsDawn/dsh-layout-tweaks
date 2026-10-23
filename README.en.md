@@ -6,10 +6,9 @@
 
 Render-layer only · touches no other plugin · never touches the sidebar footer · no build step
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](#)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-DSH%20Web%20Client-4d6bfe.svg)](#)
-[![Type](https://img.shields.io/badge/type-client%20plugin-6f42c1.svg)](#)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![dsh-plugin](https://img.shields.io/badge/dsh-plugin-blue)](https://github.com/topics/dsh-plugin)
+[![DSH Market 收录徽章](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-zh.svg)](https://dsh.market/)
 
 [中文](README.md) | English
 
