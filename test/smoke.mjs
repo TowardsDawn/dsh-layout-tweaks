@@ -10,7 +10,8 @@
  *   3. `factory()` 必须返回 `{ name, apply }`；
  *   4. host 半必须能被 import 且导出 `name` / `apply`；
  *   5. 关键标记与必需文件必须存在（防止误删 / 漏提交）；
- *   6. **源码不得再出现底部区域的干预**（v0.3.0 的边界，防止旧逻辑回潮）。
+ *   6. 底栏排布的选择器必须只认稳定标识，已废弃的「入口并入折叠块」
+ *      搬运机制（拆容器盒子那套）不得回潮。
  *
  * 用法：`npm test` 或 `node test/smoke.mjs`
  */
@@ -78,14 +79,30 @@ try {
 
 /* ---------- 5：关键标记与必需文件 ---------- */
 
-for (const token of ['dsh-lt-head', 'dsh-lt-caret', 'header-two-rows', 'data-dsh-lt-collapsed', 'conversation.session.header']) {
+for (const token of ['dsh-lt-head', 'dsh-lt-caret', 'header-two-rows', 'footer-layout', 'data-dsh-lt-collapsed', 'conversation.session.header']) {
 	check(`源码包含 ${token}`, source.includes(token));
 }
 
 /*
- * 6：边界防回归 —— v0.3.0 起本插件**完全不碰侧栏底部区域**。
- * 这几个标记属于已废弃的「入口并入折叠块」实现；一旦它们重新出现，
- * 说明那段会改变容器 flex 方向、并与其他插件抢 order 的逻辑又回来了。
+ * 6：底栏排布必须只依赖稳定标识。
+ * `data-dsh-plugin` 是各插件自己写在元素上的常量，`sm-footerBtn` 是无 hash 的
+ * 类名后缀 —— 两者都不会随打包或语言变化。若以后有人图省事改用
+ * `[class*="hHd-Xa_"]` 这类 hash 前缀或 aria 文案，这里会先炸。
+ */
+for (const token of [
+	'sidebar.footer.action',
+	'footerActions',
+	'sm-footerBtn',
+	'data-dsh-plugin="update"',
+	'data-dsh-plugin="remote-bridge"',
+]) {
+	check(`源码包含 ${token}（底栏排布）`, source.includes(token));
+}
+
+/*
+ * 7：边界防回归 —— 已废弃的「入口并入折叠块」实现不得回潮。
+ * 那几个标记会拆容器盒子（display:contents）并改变容器自身的 flex 方向，
+ * 正是 0.1.0–0.2.4 那段被删掉的逻辑。现在的底栏排布只在**原容器内**排序。
  */
 for (const token of [
 	'data-dsh-lt-fold',
@@ -93,10 +110,8 @@ for (const token of [
 	'data-dsh-lt-box',
 	'data-dsh-lt-settings',
 	'BOTTOM_KEEP_SELECTORS',
-	'sidebar.footer.action',
-	'footerActions',
 ]) {
-	check(`源码不包含 ${token}（底部区域零干预）`, !source.includes(token));
+	check(`源码不包含 ${token}（旧搬运机制）`, !source.includes(token));
 }
 
 check('夹具存在', existsSync(join(ROOT, 'test', 'fixture.html')));

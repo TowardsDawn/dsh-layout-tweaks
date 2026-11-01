@@ -2,6 +2,38 @@
 
 本项目的版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.0] - 2026-11-01
+
+### 新增
+
+- **③ 底栏排布**（`sidebar.footer.action`）：把「会话与工作区」放第一行独占，其余底部动作
+  （检查更新 / 手机App远程访问）排第二行，各自保留原有对齐。**与 ② 的顶栏面板折叠完全独立** ——
+  独立的开关（`footerLayout`）、独立的 flag（`footer-layout`），互不影响。
+- 这是个**多方共享**的槽位：条目仍由各插件自己渲染，本插件只决定它们落在第几行。
+  实现只用 `order` 加一个容器 `flex-wrap`，**不搬 DOM、不改容器方向、不碰宽度与对齐**。
+
+### 说明
+
+- 旧版（0.1.0–0.2.4）的「把底部入口搬进折叠块」仍然保持移除状态：那套要拆容器盒子
+  （`display:contents`）并改变容器自身的 flex 方向，已确认不划算。这次只在**原容器内**排序。
+- 选择器只认稳定标识：`data-dsh-plugin="update"` / `data-dsh-plugin="remote-bridge"`
+  （插件自己写在元素上的常量）与无 hash 的类名后缀 `sm-footerBtn`；
+  未识别的条目走零特异性基线 `order:3`，排在最后一行之后，不会被挤进目标两行。
+- 只在**侧栏展开**时接管。收起成 56px 轨道时底部区域整体隐藏、各插件有自己的竖排逻辑，
+  本插件不参与。
+- 所有 `order` 都带 `!important`：真机上存在第三方规则
+  `[data-dsh-frame]:not(...) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(...) { order: 1 }`，
+  不加会被它整片覆盖。夹具里保留了这条规则作为回归用例。
+
+### 测试
+
+- `npm test` 增至 **28 项**：新增底栏相关正向断言（`sidebar.footer.action` / `footerActions` /
+  `sm-footerBtn` / 两个 `data-dsh-plugin`），同时保留旧搬运机制的反向断言。
+- `test/fixture.html` 升级为**三段回归夹具**：如实复刻三个插件的真实 CSS 规则
+  （session-manager 的 `:has()` 换行 + `flex:1 1 100%`、update 的胶囊 `flex:auto`、
+  remote-bridge 的 `order:1` + `margin-inline-start:auto`）与一条第三方 `order` 规则。
+  未启用插件时复现「3 行」，启用后应为「2 行」，右下角浮层直接报行数与每行成员。
+
 ## [0.3.0] - 2026-10-04
 
 ### 移除（破坏性）

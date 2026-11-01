@@ -5,20 +5,25 @@
 <title>dsh-layout-tweaks · fixture</title>
 <!--
   离线夹具：用实测的 DSH Web 客户端 DOM（class 名与层级均取自真机核对结果）
-  复刻「会话头上边栏 + 左侧栏」，用于在不登录 GUI 的前提下验证本插件的 CSS 重排。
+  复刻「会话头上边栏 + 左侧栏 + 底栏」，用于在不登录 GUI 的前提下验证本插件的
+  三段 CSS 重排：
 
-  底部区域刻意复刻了真机的形状，作为**零干预回归用例**：
-    · 检查更新 / 远程访问      → 图标按钮
-    · 上下文洞察 / 会话管理    → 功能入口
-    · DeepSeek 今日消费        → 多控件卡片，位于底部区的另一个子容器
-    · 设置                     → 在自己的容器里
-  本插件不应给这批节点任何 CSS 规则、也不应写入任何属性 ——
-  右下角浮层会实时报告「底部区域被本插件写入的节点数」，该数必须为 0。
+    ① 会话头两行      —— 第 1 行会话名 + 工作模式，其余控件下移
+    ② 面板列表折叠    —— 折叠头折叠 nav
+    ③ 底栏排布        —— 「会话与工作区」独占第 1 行，其余动作排第 2 行
+
+  底栏部分**如实复刻了三个插件各自下发的布局规则**，这是 ③ 的回归关键：
+    · dsh-session-manager  .sm-footerBtn-wide{flex:1 1 100%} + 给容器加 flex-wrap（:has）
+    · dsh-update           [data-wide=wide]{flex:auto; justify-content:flex-start}
+    · dsh-remote-bridge    [data-wide=wide]{order:1; margin-inline-start:auto}
+  另外保留一条第三方 order 规则（data-dsh-frame），用来验证 !important 仍然压得住。
 
   打开方式：
     fixture.html                  → 关闭插件（before）
     fixture.html?on=1             → 启用插件（after）
-    fixture.html?on=1&collapsed=1 → 启用插件并处于折叠态
+    fixture.html?on=1&collapsed=1 → 启用插件并折叠面板列表
+
+  右下角浮层会报告底栏实际行数与每行成员，方便一眼核对。
 -->
 <style>
   :root{
@@ -37,35 +42,44 @@
   aside{width:260px;flex:none;background:var(--dsw-specific-sidebar-fill);border-right:.5px solid var(--dsw-alias-border-l3)}
   .hHd-Xa_root{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:6px 12px}
   .hHd-Xa_logoRow{display:flex;align-items:center;gap:8px;height:36px}
-  .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.zz-newEntry,.cvtkAW_footMain,.VOzbGW_trigger,.WYT-ka_trigger,.fThDlq_trigger{
+  .hHd-Xa_newSession,.hHd-Xa_panelRow,.sm-footerBtn,.zz-newEntry,.cvtkAW_footMain,.VOzbGW_trigger{
     display:flex;align-items:center;gap:8px;box-sizing:border-box;
     min-height:36px;margin:0 2px;padding:7px 8px;
     border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;
   }
-  .hHd-Xa_newSession,.hHd-Xa_panelRow,.lc-ov-entry,.sm-footerBtn,.zz-newEntry,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
-  /* 真机里这两个入口靠 flex:1 占满宽度（它们的父容器是横向 flex）。
-     夹具保留这个 flex:1：历史上「把入口搬进侧栏根」的做法会让同一个 flex:1
-     变成「纵向抢高度」—— 条目被撑高、工作区列表（flex:1）被挤成 0 高度。
-     现在本插件不再搬动任何底部条目，这行只是把真机的约束留在夹具里当反面用例。 */
-  .lc-ov-entry,.sm-footerBtn{flex:1 1 auto}
+  .hHd-Xa_newSession,.hHd-Xa_panelRow,.zz-newEntry,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
   .hHd-Xa_panelRow{width:auto}
-  .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.lc-ov-entry:hover,.sm-footerBtn:hover,.zz-newEntry:hover,
-  .cvtkAW_footMain:hover,.VOzbGW_trigger:hover,.WYT-ka_trigger:hover,.fThDlq_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
+  .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.sm-footerBtn:hover,.zz-newEntry:hover,
+  .cvtkAW_footMain:hover,.VOzbGW_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
   .hHd-Xa_panelList{display:flex;flex-direction:column;flex:none;gap:4px;margin-bottom:8px}
   .hHd-Xa_regionArea{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
   .bhn1Oq_header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;color:var(--dsw-alias-label-secondary);font-size:12px}
   .bhn1Oq_entry{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;color:var(--dsw-alias-label-primary)}
-  .hHd-Xa_footArea{display:flex;flex-direction:column;flex:none}
-  .hHd-Xa_footerActions{display:flex;flex-direction:column}
-  .hHd-Xa_settingsArea{display:flex;flex-direction:column}
   .dsh-fixture-dot{width:16px;height:16px;flex:none;border-radius:5px;background:currentColor;opacity:.35}
 
-  /* 底部图标按钮与用量卡片：复刻真机的横向小控件形态 */
-  .WYT-ka_trigger,.fThDlq_trigger{display:inline-flex;justify-content:center;width:32px;min-height:32px;padding:0;margin:0 2px}
+  /* ---------- 底栏（⚠ 这里一行都不能改，全是真机形态） ---------- */
+  .hHd-Xa_footArea{display:flex;flex-direction:column;flex:none}
+  .hHd-Xa_footerActions{display:flex}                    /* ui-sidebar：横向 flex，默认 row */
+  .hHd-Xa_settingsArea{display:flex;flex-direction:column}
+  .zz-usage{display:flex;flex-direction:column}
+
+  /* dsh-session-manager 的真实规则：条目独占整行 + 反向把容器改成可换行 */
+  [class*="footerActions"]:has(.sm-footerBtn-wide){flex-wrap:wrap;align-content:flex-start;height:auto}
+  .sm-footerBtn-wide{flex:1 1 100%;width:calc(100% + 8px);height:34px;margin:4px -4px 4px;padding:6px 10px}
+
+  /* dsh-update 的真实规则：有可用更新时变成「胶囊」，flex:auto 会拉伸 */
+  .WYT-ka_trigger{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0 2px;padding:0 10px;
+    border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+  .WYT-ka_trigger[data-wide="wide"]{border-radius:999px;flex:auto;justify-content:flex-start;width:auto;min-width:0}
+
+  /* dsh-remote-bridge 的真实规则：永远排最后 + 自己靠右 */
+  .sd7VOG_trigger{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0 2px;padding:0 10px;
+    border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+  .sd7VOG_trigger[data-wide="wide"]{order:1;margin-inline-start:auto}
+
   .cvtkAW_footCard{display:flex;align-items:center;width:100%}
   .cvtkAW_footCard .cvtkAW_footMain{flex:1 1 auto;width:auto}
   .cvtkAW_footToggle{display:inline-flex;justify-content:center;width:28px;min-height:28px;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}
-  .zz-usage{display:flex;flex-direction:column}
 
   /* ---------- 会话头（模拟 ui-conversation 的形态） ---------- */
   main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
@@ -97,11 +111,10 @@
   .fixture-note b{color:#7ef0a0}
   .fixture-note b.bad{color:#ff8b8b}
 
-  /* 复刻真机上另一个插件的排序规则（实测存在，特异性 (0,6,0)）。
-     本插件已不再参与底部条目的排序，这条规则留在夹具里只是复刻真实环境：
-     底部区域的外观必须与「没有任何本插件干预」时完全一致。 */
-  [data-dsh-frame]:not([data-sidebar-collapsed]) [class*="footerActions"] >
-    [data-slot="sidebar.footer.action"] > :not([data-dsh-part="entry"]):not([class*="entryRow"]) { order: 1 }
+  /* 说明：真机上还有一条第三方规则会给「没有 data-dsh-part 的条目」设 order:1
+     （`[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…)`）。
+     这里不再复刻它 —— 它会掩盖「三家 CSS 自身就能挤成三行」这个真正的现象，
+     而且本插件所有 order 都带 !important，本来就不受它影响。 */
 </style>
 </head>
 <body data-dsh-frame>
@@ -133,17 +146,18 @@
 
         <div class="hHd-Xa_footArea">
           <div class="hHd-Xa_footerActions">
-            <!-- 真机里 footerActions 之下是槽位锚点宿主（无 class 的透明 div），条目是它的直接子元素。
-                 本插件不该碰这一层里的任何节点。 -->
+            <!-- footerActions 之下是槽位锚点宿主（无 class 的透明 div），条目是它的直接子元素。
+                 三个条目照真机的属性与类名复刻，外加一个「未知新条目」用来验证基线 order。 -->
             <div data-slot="sidebar.footer.action" style="display:contents">
-              <button class="WYT-ka_trigger" aria-label="检查更新">⟳</button>
-              <div class="fThDlq_entryRow"><button class="fThDlq_trigger" aria-label="远程访问">⇄</button></div>
-              <button class="lc-ov-entry" aria-label="上下文洞察"><span class="dsh-fixture-dot"></span>上下文洞察</button>
-              <button class="sm-footerBtn" aria-label="会话管理"><span class="dsh-fixture-dot"></span>会话管理</button>
-              <button class="zz-newEntry" aria-label="示例新模块"><span class="dsh-fixture-dot"></span>示例新模块</button>
+              <button class="WYT-ka_trigger" data-dsh-plugin="update" data-dsh-part="entry" data-wide="wide"
+                      aria-label="检查更新">⟳ 检查更新</button>
+              <button class="sd7VOG_trigger" data-dsh-plugin="remote-bridge" data-dsh-part="entry" data-wide="wide"
+                      aria-label="手机App远程访问">⇄ 远程访问</button>
+              <button class="sm-footerBtn sm-footerBtn-wide" aria-label="会话与工作区">会话与工作区</button>
+              <button class="zz-newEntry" aria-label="示例新模块">示例新模块</button>
             </div>
           </div>
-          <!-- 用量卡片在底部区的另一个子容器里 -->
+          <!-- 用量卡片在底部区的另一个子容器里（dsh-usage 直接 createRoot 插入，不属于任何槽） -->
           <div class="zz-usage">
             <div class="cvtkAW_footCard">
               <button class="cvtkAW_footMain" aria-label="打开使用统计设置">DeepSeek 今日消费 ¥0.73</button>
@@ -204,35 +218,49 @@
   (function () {
     const params = new URLSearchParams(location.search);
     const note = document.getElementById('note');
-    if (params.get('on') !== '1') {
-      note.innerHTML = 'fixture：插件未启用（<b>?on=1</b> 启用）';
-      return;
-    }
-    const registration = window.__DSH_LT_REGISTRATION__;
-    if (!registration) { note.innerHTML = 'fixture：<b class="bad">client.js 未注册模块</b>'; return; }
-    const plugin = registration.factory();
     const collapsed = params.get('collapsed') === '1';
-    try {
-      // 夹具走 localStorage 之外的入口，这里只用来复刻「上次留下的折叠态」。
-      if (collapsed) localStorage.setItem(plugin.name + ':v1', JSON.stringify({ headerTwoRows: true, collapsed: true }));
-      else localStorage.removeItem(plugin.name + ':v1');
-    } catch (e) { /* file:// 下 localStorage 可能不可写，忽略 */ }
-    plugin.apply({ effect(fn) { fn(); } });
+    const on = params.get('on') === '1';
+    let plugin = null;
 
-    /** 底部区域零干预自检：统计被本插件写入过属性的节点。 */
+    if (on) {
+      const registration = window.__DSH_LT_REGISTRATION__;
+      if (!registration) { note.innerHTML = 'fixture：<b class="bad">client.js 未注册模块</b>'; return; }
+      plugin = registration.factory();
+      try {
+        if (collapsed) localStorage.setItem(plugin.name + ':v1', JSON.stringify({ headerTwoRows: true, footerLayout: true, collapsed: true }));
+        else localStorage.removeItem(plugin.name + ':v1');
+      } catch (e) { /* file:// 下 localStorage 可能不可写，忽略 */ }
+      plugin.apply({ effect(fn) { fn(); } });
+    }
+
+    /** 统计底栏实际分行：按 getBoundingClientRect().top 分组。 */
     function auditFooter() {
-      const sel = '[data-dsh-lt], [data-dsh-lt-collapsed], [data-dsh-lt-box], [data-dsh-lt-fold], [data-dsh-lt-keep], [data-dsh-lt-settings]';
-      const footArea = document.querySelector('.hHd-Xa_footArea');
-      const touched = footArea
-        ? Array.from(footArea.querySelectorAll(sel)).filter((el) => !el.classList.contains('dsh-lt-head'))
-        : [];
-      const head = document.getElementById(plugin.name + '-head');
-      const ok = touched.length === 0;
+      const anchor = document.querySelector('[data-slot="sidebar.footer.action"]');
+      const items = anchor ? Array.from(anchor.children) : [];
+      const KNOWN = '[data-dsh-plugin="update"], [data-dsh-plugin="remote-bridge"], [class*="sm-footerBtn"]';
+      const rows = new Map();
+      for (const el of items) {
+        const top = Math.round(el.getBoundingClientRect().top);
+        if (!rows.has(top)) rows.set(top, []);
+        rows.get(top).push({ label: el.getAttribute('aria-label') || el.className, known: el.matches(KNOWN) });
+      }
+      const tops = Array.from(rows.keys()).sort((a, b) => a - b);
+      const knownRows = tops.filter((top) => rows.get(top).some((x) => x.known));
+      const rowText = tops
+        .map((top, i) => {
+          const cell = rows.get(top).map((x) => (x.known ? x.label : x.label + '（未识别）')).join(' ｜ ');
+          return '第' + (i + 1) + '行：' + cell;
+        })
+        .join('<br>');
+      const head = plugin ? document.getElementById(plugin.name + '-head') : null;
+      // 已知三条：未启用时被三家 CSS 挤成 3 行；启用后应为 2 行。
+      const expected = on ? 2 : 3;
+      const ok = knownRows.length === expected;
       note.innerHTML =
-        'fixture：插件已启用（' + plugin.name + (collapsed ? ' · 折叠态' : '') + '）<br>' +
-        '折叠头：' + (head ? '已挂载' : '<b class="bad">缺失</b>') +
-        '（下一个兄弟是 ' + (head && head.nextElementSibling ? head.nextElementSibling.tagName.toLowerCase() : '—') + '）<br>' +
-        '底部区域被写入的节点数：<b' + (ok ? '' : ' class="bad"') + '>' + touched.length + '</b>（应为 0）';
+        'fixture：' + (on ? '插件已启用' : '插件未启用') + (collapsed ? ' · 面板折叠' : '') +
+        (on ? '（' + plugin.name + '）' : '（<b>?on=1</b> 启用）') + '<br>' +
+        (on ? '折叠头：' + (head ? '已挂载' : '<b class="bad">缺失</b>') + '　' : '') +
+        '已知三条占 <b' + (ok ? '' : ' class="bad"') + '>' + knownRows.length + '</b> 行（预期 ' + expected + '）<br>' + rowText;
     }
 
     // 等一帧，让 MutationObserver + rAF 的挂载流程跑完。

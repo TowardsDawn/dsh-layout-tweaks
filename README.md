@@ -2,9 +2,9 @@
 
 # dsh-layout-tweaks
 
-**DSH Web GUI 布局微调 —— 会话头上边栏拆成两行、左侧栏面板列表一键折叠**
+**DSH Web GUI 布局微调 —— 会话头两行、面板列表折叠、底栏入口两行排布**
 
-纯渲染层实现 · 不修改任何其他插件 · 不干预侧栏底部区域 · 免构建
+纯渲染层实现 · 不修改任何其他插件 · 免构建
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![dsh-plugin](https://img.shields.io/badge/dsh-plugin-blue)](https://github.com/topics/dsh-plugin)
@@ -20,15 +20,21 @@
 
 ## 这是什么
 
-DSH Web GUI 里有两处空间上的不便：会话头上边栏把会话名、工作模式和十几个操作按钮挤在同一行；左侧栏顶部的面板模块（插件、任务看板、技能中心、SSH）始终占着位置，而它们并不是每时每刻都要用。
+DSH Web GUI 里有三处布局上的不便：
 
-`dsh-layout-tweaks` 用**一个客户端插件**处理这两处，且：
+1. **会话头上边栏**把会话名、工作模式和十几个操作按钮挤在同一行；
+2. **左侧栏顶部的面板模块**（插件、任务看板、技能中心、SSH）始终占着位置；
+3. **左侧栏底部的动作行**被三个插件各自的 CSS 挤成三行 ——「检查更新」「会话与工作区」「手机App远程访问」各占一行，还各自不同对齐。
+
+`dsh-layout-tweaks` 用一个客户端插件处理这三处，且：
 
 - **不接管任何 slot**、**不修改其他插件的任何代码**；
-- **完全不碰侧栏底部区域** —— `上下文洞察 / 会话管理 / 检查更新 / 远程访问 / 今日消费 / 设置` 的位置与顺序全由宿主和其他插件决定，本插件一个属性都不写（这是 v0.3.0 起的硬边界，理由见[附录](#附录一次被放弃的尝试)）；
 - 全部通过注入 CSS（外加一个自建的折叠头）完成，React 渲染树零感知；
 - **免构建**：`lib/` 直接手写可加载产物，不需要 tsdown / rolldown / tsc；
 - 找不到锚点时**静默失效**，绝不会把宿主界面改坏。
+
+> ③ 处理的是一个**多方共享**的槽位（`sidebar.footer.action`）：条目仍由各插件自己渲染，
+> 本插件只决定它们落在第几行 —— **不搬 DOM、不改容器结构、不动宽度与对齐**。
 
 ## 功能
 
@@ -36,8 +42,11 @@ DSH Web GUI 里有两处空间上的不便：会话头上边栏把会话名、�
 |---|------|:----:|------|
 | ① | **会话头拆两行** | 开 | 第 1 行 = 会话名 + 工作模式；第 2 行 = 撤销 / 恢复 / 快照 / 对话撤回 / 归档 / 标签备注 / 移动至工作区 / 复制链接等其余控件；页签行保持不变 |
 | ② | **面板列表折叠** | 展开 | 侧栏顶部新增折叠头，一键收起「插件 / 任务看板 / 技能中心 / SSH」，把空间让给工作区与会话列表 |
+| ③ | **底栏两行排布** | 开 | 「会话与工作区」独占第 1 行；「检查更新」「手机App远程访问」排第 2 行，**各自保留原有对齐**（左 / 右） |
 
-② 就是点击折叠头本体，状态即时生效并记忆；侧栏收起成 56px 轨道时折叠头自动隐藏。
+- ① 与 ③ 是纯 CSS，无任何 DOM 写入；② 点击折叠头本体，状态即时生效并记忆。
+- **② 与 ③ 互相独立**：两个开关、两个 flag（`collapsed` / `footer-layout`），折叠顶栏不影响底栏排布，反之亦然。
+- 侧栏收起成 56px 轨道时，③ 自动让位（轨道态由各插件自己的竖排逻辑负责）。
 
 ## 效果
 
@@ -47,16 +56,19 @@ DSH Web GUI 里有两处空间上的不便：会话头上边栏把会话名、�
 |:------:|:-----:|
 | ![before](assets/before.png) | ![after](assets/after.png) |
 
-- **会话头**：`dsh bug 检查` + `标准模式` 独占第一行，其余控件整体下移一行，不再横向挤压。
+- **会话头**：`dsh bug 检查` + `标准模式` 独占第一行，其余控件整体下移一行。
 - **侧栏**：面板列表上方多了一个折叠头 `▾ 面板与插件 4`。
+- **底栏**：从「检查更新 / 会话与工作区 / 手机App远程访问」三行，回到两行 ——
+  `会话与工作区` 独占第一行，`检查更新`（左）与 `手机App远程访问`（右）并排第二行。
 
-**底部区域在两张图里完全一致** —— `⟳ 检查更新 / ⇄ 远程访问 / 上下文洞察 / 会话管理 / 今日消费 / 设置` 的位置、顺序、横向排列都没有任何变化。这是刻意的边界：本插件不下发任何针对底部区域的规则，也不给那里的节点写任何属性（夹具右下角会实时报告「底部区域被写入的节点数」，必须为 0）。
+> 底栏这张对比是**真实现象的复刻**：夹具里如实复刻了三个插件各自的 CSS，
+> 关闭插件时能稳定复现「三行 + 不同对齐」，打开后变成两行。
 
 ### ② 折叠
 
 ![collapsed](assets/collapsed.png)
 
-> 示意图由仓库内的离线夹具 `test/fixture.html` 渲染 —— 它用**实测的 DSH 客户端 DOM**（class 名与层级取自真机核对）复刻了会话头与左侧栏，因此不用登录 GUI 也能验证布局。
+> 示意图由仓库内的离线夹具 `test/fixture.html` 渲染 —— 它用**实测的 DSH 客户端 DOM**（class 名与层级取自真机核对）复刻了会话头、左侧栏与底栏，因此不用登录 GUI 也能验证布局。右下角浮层会直接报出底栏的实际行数与每行成员。
 
 ## 安装
 
@@ -112,26 +124,34 @@ dsh plugin --profile web add "github:TowardsDawn/dsh-layout-tweaks"
 
 ## 配置
 
-### 折叠开关（②）
-
-点击折叠头即可折叠 / 展开面板列表。状态记在浏览器 `localStorage`，键名 `dsh-layout-tweaks:v1`：
+所有开关都记在浏览器 `localStorage` 的 `dsh-layout-tweaks:v1`：
 
 ```json
-{ "headerTwoRows": true, "collapsed": false }
+{ "headerTwoRows": true, "footerLayout": true, "collapsed": false }
 ```
 
-### 关闭两行模式（①）
+| 键 | 作用 |
+|---|---|
+| `headerTwoRows` | ① 会话头两行 |
+| `footerLayout` | ③ 底栏两行排布 |
+| `collapsed` | ② 面板列表是否折叠（点折叠头时自动写入） |
 
-v0.3.0 起折叠头上不再挂设置入口（原来的 ⚙ 与弹层已移除），① 默认开启。需要关掉时在浏览器控制台执行：
+### 折叠面板列表（②）
+
+点折叠头即可。等价于设置 `collapsed`。
+
+### 关掉某一项
+
+v0.3.0 起折叠头上不再挂设置入口（原来的 ⚙ 与弹层已移除），三项默认全开。要关掉任意一项，在浏览器控制台执行：
 
 ```js
 const s = JSON.parse(localStorage.getItem('dsh-layout-tweaks:v1') || '{}')
-s.headerTwoRows = false
+s.headerTwoRows = false   // 或 s.footerLayout = false
 localStorage.setItem('dsh-layout-tweaks:v1', JSON.stringify(s))
 location.reload()
 ```
 
-恢复默认（两行开启、面板展开）：
+恢复默认（全开）：
 
 ```js
 localStorage.removeItem('dsh-layout-tweaks:v1'); location.reload()
@@ -206,6 +226,36 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 - 自激防护：文本只在真的变化时写入（否则 `textContent` 赋值会再次触发 observer）；
 - 侧栏收起为 56px 轨道时由 CSS 隐藏（`[class*="collapsed"]`）。
 
+### ③ 底栏两行：只管顺序，不碰外观
+
+`sidebar.footer.action` 是**多方共享**的槽位（`kind: 'list'`），目前有三个占用者，它们各自带一套互相冲突的布局规则：
+
+| 条目 | 身份标识 | 自带的布局规则 |
+|---|---|---|
+| 会话与工作区 | `class*="sm-footerBtn"` | `.sm-footerBtn-wide{ flex:1 1 100% }`，并用 `:has()` **把父容器改成 `flex-wrap:wrap`** |
+| 检查更新 | `data-dsh-plugin="update"` | `[data-wide=wide]{ flex:auto; justify-content:flex-start }`（有更新时变胶囊） |
+| 手机App远程访问 | `data-dsh-plugin="remote-bridge"` | `[data-wide=wide]{ order:1; margin-inline-start:auto }`（永远排最后并靠右） |
+
+三者叠加的结果就是「三行」：`flex:auto` 的胶囊占第一行，`flex:1 1 100%` 的会话行被 wrap 到第二行，`order:1` + `margin-inline-start:auto` 的远程访问落到第三行右端。
+
+本插件只做两件事：
+
+```css
+/* 1. 保证容器可换行（其余一律不动） */
+… :where([class*="footerActions"]){ flex-wrap:wrap !important; align-content:flex-start !important; height:auto !important }
+/* 2. 用 order 决定谁在第几行；宽度、对齐、外观全部保留原样 */
+… [data-slot="sidebar.footer.action"] > :where(*){ order:3 !important }              /* 基线：未识别的排最后 */
+… [data-slot="sidebar.footer.action"] > [class*="sm-footerBtn"]{ order:0 !important }      /* 第 1 行独占 */
+… [data-slot="sidebar.footer.action"] > [data-dsh-plugin="update"]{ order:1 !important }   /* 第 2 行，左 */
+… [data-slot="sidebar.footer.action"] > [data-dsh-plugin="remote-bridge"]{ order:2 !important } /* 第 2 行，右 */
+```
+
+- **排序在原有容器内完成**，没有 `display:contents`、没有搬节点 —— 容器还是那个容器，方向还是那个方向（这正是 0.2.x 那套「搬进折叠块」失败的根源，见[附录](#附录一次被放弃的尝试)）。
+- 选择器只用**稳定标识**：`data-dsh-plugin` 是插件自己写在元素上的常量，`sm-footerBtn` 是无 hash 的类名后缀；不使用会随打包变化的 CSS Module 前缀。
+- 未识别的条目（未来新插件）走零特异性基线 `order:3`，排在最后一行之后，不会被挤进目标两行。
+- 只在**侧栏展开**时接管（`[data-slot="sidebar"] > div:not([class*="collapsed"])`）；收起成 56px 轨道时底部区域整体隐藏，各插件有自己的竖排逻辑，本插件不参与。
+- 所有 `order` 都带 `!important`：真机上还有一条第三方规则 `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`，不加会被它整片覆盖。
+
 ### 使用的 DOM 锚点
 
 | 用途 | 锚点 |
@@ -215,44 +265,51 @@ DSH 的 slot 系统对「重排别人的 UI」有三个硬约束（详见 `@deep
 | 侧栏宿主 / 根 | `[data-slot="sidebar"]` → 其第一个子元素 |
 | 面板列表 | 侧栏根的直接子元素 `nav` |
 | 工作区区（折叠头兜底锚点） | 侧栏根的子元素 `div:has(> [data-slot="sidebar.workspaces"])` |
+| 底栏槽位 | `[data-slot="sidebar.footer.action"]`（其直接子元素即各条目） |
 
-全部为 **`data-slot` 属性、结构关系与类名后缀**，**不使用会随版本变化的 CSS Module hash 前缀**（如 `wSkVaW_` / `hHd-Xa_`）。
+全部为 **`data-slot` 属性、插件自带的稳定属性与类名后缀**，**不使用会随版本变化的 CSS Module hash 前缀**（如 `wSkVaW_` / `hHd-Xa_`）。
 
 ## 附录：一次被放弃的尝试
 
-v0.1.0 → v0.2.4 之间，本插件还做过一件事：把侧栏底部的「上下文洞察 / 会话管理」这类功能入口搬到面板列表下方，并收进折叠块。**v0.3.0 把它整套删掉了**，因为收益（少占一屏）远小于代价。留下的教训写在这里，免得以后重蹈：
+v0.1.0 → v0.2.4 之间，本插件还做过一件事：把侧栏底部的「上下文洞察 / 会话管理」这类功能入口**搬到面板列表下方，并收进折叠块**。**v0.3.0 把它整套删掉了**，因为收益（少占一屏）远小于代价。留下的教训写在这里，免得以后重蹈：
 
 1. **底部入口与面板列表的注册方式差异很大。** 它们属于不同的槽位、住在不同的容器里、受不同的布局约束；「并入折叠块」只能靠在渲染层把整条容器链拆成 `display:contents` 来伪造，天生脆弱。
 2. **`order` 作用于「布局」上的 flex item，而选择器必须按「DOM 层级」书写。** `display:contents` 只让容器在布局上透明，它在 DOM 里仍是那些条目的父元素 —— 一开始把选择器写成直接子级，结果匹配不到任何条目，它们保持默认 `order:0` 全部堆到侧栏顶上。
 3. **拆掉容器盒子会连带改变容器自身的 flex 方向。** 这是最贵的一个坑：底部入口原本待在横向容器里靠 `flex:1` 占满宽度，被搬进侧栏根（纵向容器）后，同一个 `flex:1` 变成「**抢占高度**」—— 实测入口被撑到 125px（正常 36px），工作区列表被挤到 0 高度，表现是「工作区/会话列表不见了」。
-4. **同一批条目可能已经被别的插件排序了。** 实测有另一个插件（用 `data-dsh-frame` / `data-dsh-part` 标记侧栏）下发 `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`，特异性 `(0,6,0)`，比本插件的 `(0,3,1)` 高，会把分类结果整片压掉。最终只能靠清一色 `!important` 对抗 —— 而这本身就是在给别的插件制造同类问题。
+4. **同一批条目可能已经被别的插件排序了。** 实测有另一个插件（用 `data-dsh-frame` / `data-dsh-part` 标记侧栏）下发 `[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…) { order: 1 }`，特异性 `(0,6,0)`，比本插件的 `(0,3,1)` 高，会把分类结果整片压掉。最终只能靠清一色 `!important` 对抗。
 5. **基线规则的特异性会反噬分类规则**，得靠 `:where()` 把基线压到零特异性才压得住。
 
-结论：**侧栏底部区域交给宿主和其他插件，本插件一个字都不改** —— 外显布局与「本插件从未有过 footer 干预」时逐像素一致，新插件注册什么就长什么样。从 v0.3.0 起，`npm test` 里有一组反向断言专门盯着这条边界：源码中一旦重新出现 `data-dsh-lt-fold` / `data-dsh-lt-keep` / `data-dsh-lt-box` / `data-dsh-lt-settings` / `BOTTOM_KEEP_SELECTORS` / `sidebar.footer.action` / `footerActions`，测试直接失败。
+结论分两条：
+
+- **不搬**：跨容器的「并入折叠块」永久放弃 —— 它必须改变容器的存在与方向，代价（布局脆弱、挤掉工作区）远大于收益。
+- **可以排**：v0.4.0 的 ③ 只在**原容器内**用 `order` 决定行，不拆盒子、不搬节点，因此上面第 2、3 条坑不再适用；第 4、5 条的经验则直接复用（`!important` + `:where()` 基线）。
+
+`npm test` 里有一组反向断言专门盯着这条边界：`data-dsh-lt-fold` / `data-dsh-lt-keep` / `data-dsh-lt-box` / `data-dsh-lt-settings` / `BOTTOM_KEEP_SELECTORS` 一旦重新出现，测试直接失败。
 
 ## 兼容性
 
 | 项目 | 要求 |
 |------|------|
-| 宿主 | DSH Web 客户端（DOM 形态基于 0.2.0-rc 系列实测） |
+| 宿主 | DSH Web 客户端（DOM 形态基于 0.2.1-rc 系列实测） |
 | 浏览器 | 支持 `:has()` 的现代浏览器（Chrome / Edge 105+、Firefox 121+、Safari 15.4+） |
-| 降级 | 不支持 `:has()` 时两行重排规则被 `@supports` 挡下，插件静默不生效；折叠功能仍可用（它不依赖 `:has()`） |
+| 降级 | 不支持 `:has()` 时 ① 与 ③ 被 `@supports` 挡下，插件静默不生效；② 折叠仍可用（它不依赖 `:has()`） |
 | Node（仅安装时） | ≥ 22.19 |
 
 ## 已知限制
 
 - **依赖宿主 DOM 形态**：DSH 大版本若重构会话头或侧栏结构，规则会失配。此时表现是「插件不生效」而不是报错；更新选择器即可。
-- **折叠头假设侧栏根的第一个 `nav` 就是面板列表**（找不到时退化为工作区区容器）。面板列表为空的极端情况下，折叠头会插在工作区区之上 —— 仍可点击，只是没有面板可折叠。
-- **顶部两行假设 `actions` 的第一项是工作模式**（它本身带 `order:-10`，恒定第一个）。若上游调换顺序，第 1 行的内容会跟着变。
-- **第 2 行是普通 flex 行**（`flex-wrap`）：窗口很窄或注册了很多头部按钮时会自然溢出到更多行，这是刻意行为，保证控件不被裁切。
-- **折叠头是自建节点**，与宿主原生的面板列表标题（若有）可能视觉上并列 —— 属预期。
+- **③ 依赖两个第三方标识**：`data-dsh-plugin="update"` / `data-dsh-plugin="remote-bridge"` 与类名后缀 `sm-footerBtn`。若作者改名，这两条规则会静默失效（底栏退回原样，不会变坏）—— 届时改一行选择器即可。
+- **③ 只保证「谁在第几行」**：条目的宽度与对齐仍由各插件决定。若某个插件将来把 `flex` 改成需要独占整行的值，它会自动换到下一行（基线 `order:3` 保证不会被排进目标两行）。
+- **折叠头假设侧栏根的第一个 `nav` 就是面板列表**（找不到时退化为工作区区容器）。
+- **顶部两行假设 `actions` 的第一项是工作模式**（它本身带 `order:-10`，恒定第一个）。
+- **会话头第 2 行是普通 flex 行**（`flex-wrap`）：窗口很窄或注册了很多头部按钮时会自然溢出到更多行，这是刻意行为，保证控件不被裁切。
 
 ## FAQ
 
 <details>
 <summary><b>会影响其他插件吗？</b></summary>
 
-不会。插件不调用任何其他插件的接口、不改它们的注册、不移动它们渲染的节点，也**不给侧栏底部区域的任何节点写过属性**。它对 DOM 的唯一写入是一个属于自己的折叠头节点（卸载时移除）。
+不会改它们的代码、注册或渲染的节点。对 DOM 的唯一写入是一个属于自己的折叠头节点（卸载时移除）；③ 只是给共享槽位里的条目排了个序，宽度、对齐、外观一律不动。
 </details>
 
 <details>
@@ -262,9 +319,15 @@ v0.1.0 → v0.2.4 之间，本插件还做过一件事：把侧栏底部的「�
 </details>
 
 <details>
-<summary><b>为什么不再把底部入口（上下文洞察 / 会话管理）搬进折叠块？</b></summary>
+<summary><b>③ 和 ② 是一套吗？</b></summary>
 
-见[附录](#附录一次被放弃的尝试)。一句话：那批条目的注册方式与面板列表差异太大，跨容器搬移必然要拆容器盒子、改容器 flex 方向、与其他插件的排序规则抢优先级 —— 换来的只是少占一屏，不值得。
+不是。② 折叠的是**顶部的面板列表**（`sidebar.panellist` 所在的那条 `nav`），③ 排的是**底部的动作行**（`sidebar.footer.action`）。两个独立开关：`collapsed` 与 `footerLayout`。
+</details>
+
+<details>
+<summary><b>为什么还保留「附录：一次被放弃的尝试」？</b></summary>
+
+因为那段历史解释了 ③ 与旧方案的本质区别：旧的「并入折叠块」要拆容器盒子并改变容器 flex 方向，代价极大；新的 ③ 只在原容器里排序。写清楚，免得以后有人再走一遍。
 </details>
 
 <details>
@@ -276,13 +339,13 @@ v0.1.0 → v0.2.4 之间，本插件还做过一件事：把侧栏底部的「�
 <details>
 <summary><b>怎么完全恢复原样？</b></summary>
 
-点开折叠头展开面板列表，然后清掉 `localStorage` 的 `dsh-layout-tweaks:v1`（或按[配置](#配置)里的代码关掉 ①）。要在装配层面彻底移除，见[安装](#安装)里的「卸载」。
+清掉 `localStorage` 的 `dsh-layout-tweaks:v1`（或按[配置](#配置)逐项关闭），页面即回到宿主原生布局。要在装配层面彻底移除，见[安装](#安装)里的「卸载」。
 </details>
 
 <details>
-<summary><b>怎么确认插件没有动我的底部控件？</b></summary>
+<summary><b>怎么确认 ③ 生效了？</b></summary>
 
-打开离线夹具 `test/fixture.html?on=1`（或 `&collapsed=1`），右下角会显示自检结果：**「底部区域被写入的节点数：0（应为 0）」**。那一页的底部区域是按真机结构复刻的（图标按钮 / 功能入口 / 多控件卡片 / 设置），数字非 0 就说明边界被破坏了。
+打开离线夹具 `test/fixture.html?on=1`，右下角会报「底栏行数：2（预期 2）」并列出每行成员（第1行：会话与工作区；第2行：检查更新｜手机App远程访问｜示例新模块）。去掉 `?on=1` 则恢复「3 行」的坏状态，可以直接对比。
 </details>
 
 ## 开发
@@ -291,7 +354,7 @@ v0.1.0 → v0.2.4 之间，本插件还做过一件事：把侧栏底部的「�
 
 ```bash
 # 离线预检（语法解析 / 模块注册协议 / factory 导出 / host 半 /
-#          关键标记 / 底部区域零干预反向断言 / 必需文件，共 24 项）
+#          底栏选择器正向断言 / 旧搬运机制反向断言 / 必需文件，共 28 项）
 # —— 客户端插件最容易翻车的一类错误会在这里被拦下：整段 CSS 活在一个模板字符串里，
 #    注释里误用反引号会提前终止它，模块 import 失败（DSH 界面报 "import failed"）
 npm test
@@ -299,12 +362,12 @@ npm test
 # 离线夹具：用实测 DOM 复刻件验证布局（无需登录 GUI）
 #   test/fixture.html                  → 关闭插件（before）
 #   test/fixture.html?on=1             → 启用插件（after）
-#   test/fixture.html?on=1&collapsed=1 → 启用并处于折叠态
+#   test/fixture.html?on=1&collapsed=1 → 启用并折叠面板列表
 ```
 
 **push 前请先跑 `npm test`**：客户端插件的错误只会在浏览器里炸，而这个脚本不需要 DSH、也不需要浏览器。
 
-夹具里复刻了真机底部区域的原样结构（含另一插件的 `order` 规则），并内置一条自检：**底部区域被本插件写入的节点数必须为 0**。修改 `lib/client.js` 里的 `CSS` 常量后刷新浏览器即可看到结果；若在真实 DSH 里验证，注意先展开侧栏（收起为 56px 轨道时插件不显示折叠头）。
+夹具里复刻了三个插件的真实 CSS 规则（session-manager 的 `:has()` 换行 + `flex:1 1 100%`、update 的胶囊 `flex:auto`、remote-bridge 的 `order:1` + `margin-inline-start:auto`）与一条第三方 `order` 规则，右下角浮层直接报底栏行数：**关闭插件 3 行、开启后必须 2 行**。
 
 ## 目录结构
 
@@ -312,9 +375,9 @@ npm test
 dsh-layout-tweaks/
 ├─ lib/
 │  ├─ index.js          # host 半：空挂载点
-│  └─ client.js         # 浏览器半：两行重排 + 折叠头（免构建）
+│  └─ client.js         # 浏览器半：两行头部 + 折叠头 + 底栏排布（免构建）
 ├─ test/
-│  ├─ fixture.html      # 离线夹具（实测 DOM 复刻 + 零干预自检）
+│  ├─ fixture.html      # 离线夹具（实测 DOM 复刻 + 行数自检）
 │  └─ smoke.mjs         # 离线预检（npm test）
 ├─ assets/              # README 截图
 ├─ cordis.patch.yml     # bundle patch：把插件挂进装配树
