@@ -12,11 +12,10 @@
     ② 面板列表折叠    —— 折叠头折叠 nav
     ③ 底栏排布        —— 「会话与工作区」独占第 1 行，其余动作排第 2 行
 
-  底栏部分**如实复刻了三个插件各自下发的布局规则**，这是 ③ 的回归关键：
+  底栏部分**如实复刻了两个插件各自下发的布局规则**，这是 ③ 的回归关键：
     · dsh-session-manager  .sm-footerBtn-wide{flex:1 1 100%} + 给容器加 flex-wrap（:has）
-    · dsh-update           [data-wide=wide]{flex:auto; justify-content:flex-start}
     · dsh-remote-bridge    [data-wide=wide]{order:1; margin-inline-start:auto}
-  另外保留一条第三方 order 规则（data-dsh-frame），用来验证 !important 仍然压得住。
+  排布本身**不认具体插件**：除「会话与工作区」外，其余条目统一走零特异性基线。
 
   打开方式：
     fixture.html                  → 关闭插件（before）
@@ -47,8 +46,8 @@
     min-height:36px;margin:0 2px;padding:7px 8px;
     border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;
   }
-  .hHd-Xa_newSession,.hHd-Xa_panelRow,.zz-newEntry,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
-  .hHd-Xa_panelRow{width:auto}
+  .hHd-Xa_newSession,.hHd-Xa_panelRow,.VOzbGW_trigger,.cvtkAW_footMain{width:100%}
+  .hHd-Xa_panelRow,.zz-newEntry{width:auto}  /* 未知条目模拟成内容宽的普通入口 */
   .hHd-Xa_newSession:hover,.hHd-Xa_panelRow:hover,.sm-footerBtn:hover,.zz-newEntry:hover,
   .cvtkAW_footMain:hover,.VOzbGW_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
   .hHd-Xa_panelList{display:flex;flex-direction:column;flex:none;gap:4px;margin-bottom:8px}
@@ -66,11 +65,6 @@
   /* dsh-session-manager 的真实规则：条目独占整行 + 反向把容器改成可换行 */
   [class*="footerActions"]:has(.sm-footerBtn-wide){flex-wrap:wrap;align-content:flex-start;height:auto}
   .sm-footerBtn-wide{flex:1 1 100%;width:calc(100% + 8px);height:34px;margin:4px -4px 4px;padding:6px 10px}
-
-  /* dsh-update 的真实规则：有可用更新时变成「胶囊」，flex:auto 会拉伸 */
-  .WYT-ka_trigger{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0 2px;padding:0 10px;
-    border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
-  .WYT-ka_trigger[data-wide="wide"]{border-radius:999px;flex:auto;justify-content:flex-start;width:auto;min-width:0}
 
   /* dsh-remote-bridge 的真实规则：永远排最后 + 自己靠右 */
   .sd7VOG_trigger{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0 2px;padding:0 10px;
@@ -113,7 +107,7 @@
 
   /* 说明：真机上还有一条第三方规则会给「没有 data-dsh-part 的条目」设 order:1
      （`[data-dsh-frame]:not(…) [class*="footerActions"] > [data-slot="sidebar.footer.action"] > :not(…)`）。
-     这里不再复刻它 —— 它会掩盖「三家 CSS 自身就能挤成三行」这个真正的现象，
+     这里不再复刻它 —— 它会掩盖「两家 CSS 自身就会错位」这个真正的现象，
      而且本插件所有 order 都带 !important，本来就不受它影响。 */
 </style>
 </head>
@@ -149,8 +143,6 @@
             <!-- footerActions 之下是槽位锚点宿主（无 class 的透明 div），条目是它的直接子元素。
                  三个条目照真机的属性与类名复刻，外加一个「未知新条目」用来验证基线 order。 -->
             <div data-slot="sidebar.footer.action" style="display:contents">
-              <button class="WYT-ka_trigger" data-dsh-plugin="update" data-dsh-part="entry" data-wide="wide"
-                      aria-label="检查更新">⟳ 检查更新</button>
               <button class="sd7VOG_trigger" data-dsh-plugin="remote-bridge" data-dsh-part="entry" data-wide="wide"
                       aria-label="手机App远程访问">⇄ 远程访问</button>
               <button class="sm-footerBtn sm-footerBtn-wide" aria-label="会话与工作区">会话与工作区</button>
@@ -237,7 +229,7 @@
     function auditFooter() {
       const anchor = document.querySelector('[data-slot="sidebar.footer.action"]');
       const items = anchor ? Array.from(anchor.children) : [];
-      const KNOWN = '[data-dsh-plugin="update"], [data-dsh-plugin="remote-bridge"], [class*="sm-footerBtn"]';
+      const KNOWN = '[data-dsh-plugin], [class*="sm-footerBtn"]';
       const rows = new Map();
       for (const el of items) {
         const top = Math.round(el.getBoundingClientRect().top);
@@ -253,14 +245,15 @@
         })
         .join('<br>');
       const head = plugin ? document.getElementById(plugin.name + '-head') : null;
-      // 已知三条：未启用时被三家 CSS 挤成 3 行；启用后应为 2 行。
-      const expected = on ? 2 : 3;
-      const ok = knownRows.length === expected;
+      // 启用后必须恰好 2 行：会话与工作区独占第 1 行，其余动作同在第 2 行。
+      // 未启用时的行数取决于当时装了哪些插件（本例恰好也是 2 行），不做判定。
+      const expected = on ? 2 : null;
+      const ok = expected === null || tops.length === expected;
       note.innerHTML =
         'fixture：' + (on ? '插件已启用' : '插件未启用') + (collapsed ? ' · 面板折叠' : '') +
         (on ? '（' + plugin.name + '）' : '（<b>?on=1</b> 启用）') + '<br>' +
         (on ? '折叠头：' + (head ? '已挂载' : '<b class="bad">缺失</b>') + '　' : '') +
-        '已知三条占 <b' + (ok ? '' : ' class="bad"') + '>' + knownRows.length + '</b> 行（预期 ' + expected + '）<br>' + rowText;
+        '底栏共 <b' + (ok ? '' : ' class="bad"') + '>' + tops.length + '</b> 行' + (expected === null ? '（未启用，不做判定）' : '（预期 ' + expected + '）') + '<br>' + rowText;
     }
 
     // 等一帧，让 MutationObserver + rAF 的挂载流程跑完。

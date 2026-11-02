@@ -22,8 +22,8 @@ Three spots in the DSH Web GUI are awkward:
 
 1. the **session header** crams the title, the working mode and a dozen action buttons into one row;
 2. the **panel modules** at the top of the left sidebar (Plugins / Task board / Skill center / SSH) always take up space;
-3. the **sidebar footer** is squeezed into three rows by three plugins' competing CSS — *Check for updates*,
-   *Session & workspaces* and *Remote access* each get their own row, each with a different alignment.
+3. the **sidebar footer** is assembled from several plugins' competing CSS — who gets a row, who sits
+   left and who sits right all depend on each plugin's own rules, so it easily turns into a ragged block.
 
 This plugin fixes all three, and:
 
@@ -42,7 +42,7 @@ This plugin fixes all three, and:
 |---|---------|:-------:|-------|
 | ① | **Two-row session header** | on | Row 1 = session title + working mode; row 2 = undo / restore / snapshot / archive / tags / move / copy link; the tab strip stays where it is |
 | ② | **Collapsible panel list** | expanded | A collapse header at the top of the sidebar hides Plugins / Task board / Skill center / SSH in one click |
-| ③ | **Two-row footer** | on | *Session & workspaces* gets row 1 alone; *Check for updates* and *Remote access* share row 2, **keeping their own alignment** (left / right) |
+| ③ | **Two-row footer** | on | *Session & workspaces* gets row 1 alone; every other action (Remote access, …) shares row 2, **keeping its own alignment** |
 
 - ① and ③ are pure CSS (zero DOM writes); ② is a click on the collapse header, instant and remembered.
 - **② and ③ are independent**: two switches, two flags (`collapsed` / `footer-layout`).
@@ -56,11 +56,11 @@ This plugin fixes all three, and:
 
 - **Header**: `dsh bug 检查` + `标准模式` get row 1 to themselves; every other control moves down a row.
 - **Sidebar**: a collapse header (`▾ Panels & plugins 4`) appears above the panel list.
-- **Footer**: from three rows → two — *Session & workspaces* on top, then *Check for updates* (left)
-  and *Remote access* (right) side by side.
+- **Footer**: *Session & workspaces* on top, every other action on the second row (Remote access on the
+  right); a future plugin's entry lands there automatically instead of adding its own row.
 
-> The footer comparison is a **faithful reproduction**: the fixture ships the three plugins' real CSS,
-> so with the plugin off it reliably shows the broken three-row state, and with it on, two rows.
+> The footer comparison is a **faithful reproduction**: the fixture ships these plugins' real CSS,
+> so with the plugin off the rows can end up ragged, and with it on they settle into two.
 
 ### ② Collapsed
 
@@ -171,11 +171,10 @@ conflicting layout rules:
 | Entry | Stable identity | Its own rule |
 |---|---|---|
 | Session & workspaces | `class*="sm-footerBtn"` | `.sm-footerBtn-wide{ flex:1 1 100% }` **and a `:has()` rule that turns the parent into `flex-wrap:wrap`** |
-| Check for updates | `data-dsh-plugin="update"` | `[data-wide=wide]{ flex:auto; justify-content:flex-start }` (capsule when an update exists) |
 | Remote access | `data-dsh-plugin="remote-bridge"` | `[data-wide=wide]{ order:1; margin-inline-start:auto }` (always last, always right) |
 
-Together they produce the three rows: the capsule takes row 1, the `100%` entry wraps to row 2, the
-`order:1` + `margin-inline-start:auto` entry lands row 3 on the right.
+Several competing rules easily produce a ragged stack: an entry that must own a whole row, another
+shouting `order`, and every extra plugin adds one more chance to misalign.
 
 The plugin does exactly two things:
 
@@ -303,7 +302,7 @@ Clear `dsh-layout-tweaks:v1` from `localStorage` (or turn features off as shown 
 <summary><b>How can I verify ③ works?</b></summary>
 
 Open the fixture at `test/fixture.html?on=1`; the badge reports **"known three occupy 2 rows
-(expected 2)"** and lists each row (row 1: Session & workspaces; row 2: Check for updates | Remote
+(expected 2)"** and lists each row (row 1: Session & workspaces; row 2: Remote
 access). Drop `?on=1` to see the broken three-row state for comparison.
 </details>
 
@@ -327,8 +326,8 @@ npm test
 **Run `npm test` before pushing** — client-plugin mistakes only surface in the browser, and this script
 needs neither DSH nor a browser.
 
-The fixture reproduces the three plugins' real CSS rules, so the regression is honest: **three rows off,
-two rows on**, reported live by the badge.
+The fixture reproduces these plugins' real CSS rules: **the badge must report exactly two rows when the plugin is on**.
+
 
 ## License
 

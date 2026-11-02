@@ -84,20 +84,16 @@ for (const token of ['dsh-lt-head', 'dsh-lt-caret', 'header-two-rows', 'footer-l
 }
 
 /*
- * 6：底栏排布必须只依赖稳定标识。
- * `data-dsh-plugin` 是各插件自己写在元素上的常量，`sm-footerBtn` 是无 hash 的
- * 类名后缀 —— 两者都不会随打包或语言变化。若以后有人图省事改用
- * `[class*="hHd-Xa_"]` 这类 hash 前缀或 aria 文案，这里会先炸。
+ * 6：底栏排布必须**不依赖任何具体插件**。
+ * `sm-footerBtn` 是无 hash 的类名后缀（会话与工作区）；其余条目统一走零特异性基线。
+ * 因此源码里不应再出现 `data-dsh-plugin="…"` 这种写死某个插件的选择器 ——
+ * 插件一旦退役（例如 dsh-update），写死的规则就会变成永远不到达的死代码。
  */
-for (const token of [
-	'sidebar.footer.action',
-	'footerActions',
-	'sm-footerBtn',
-	'data-dsh-plugin="update"',
-	'data-dsh-plugin="remote-bridge"',
-]) {
+for (const token of ['sidebar.footer.action', 'footerActions', 'sm-footerBtn', 'footer-layout']) {
 	check(`源码包含 ${token}（底栏排布）`, source.includes(token));
 }
+
+check('源码不硬编码具体插件（无 data-dsh-plugin）', !source.includes('data-dsh-plugin'));
 
 /*
  * 7：边界防回归 —— 已废弃的「入口并入折叠块」实现不得回潮。

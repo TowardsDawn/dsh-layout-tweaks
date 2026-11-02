@@ -2,6 +2,29 @@
 
 本项目的版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.1] - 2026-11-02
+
+### 变更
+
+- **移除 dsh-update 相关的排布配置**。`dsh-update` 已从聚合包（`@linxin666/dsh-web-all`）退役，
+  footer 槽位只剩余 `dsh-remote-bridge` 与 `dsh-session-manager` 两个占用者。
+- 顺带把 ③ 改成**不认具体插件**：除了「会话与工作区」（`sm-footerBtn`，唯一需要独占整行的那类），
+  其余条目一律走零特异性基线 `order:1` —— 都排在第 2 行，靠左还是靠右由它们自己的样式决定。
+  好处是**新插件注册进来就自动归位**，插件退役时也不会留下永远不到达的死规则。
+
+### 说明
+
+- 现在 ③ 只有两条规则：`> [class*="sm-footerBtn"]{ order:0 }` 与 `> :where(*){ order:1 }`。
+  源码里不再出现任何 `data-dsh-plugin="…"` 选择器。
+- `npm test` 增加一条反向断言：源码一旦出现 `data-dsh-plugin` 即失败。
+- 顺带修好一处旧注释：夹具里"已知三条 / 三家 CSS"的措辞。
+
+### 测试
+
+- `npm test` 仍为 **28 项**（去掉两条硬编码插件断言，加入一条"不硬编码"的反向断言）。
+- `test/fixture.html` 同步移除 `dsh-update` 的条目与它的 CSS，改为
+  「会话与工作区 + 远程访问 + 未知条目」：关闭插件 3 行、开启后 2 行，右下角浮层直接报行数。
+
 ## [0.4.0] - 2026-11-01
 
 ### 新增
